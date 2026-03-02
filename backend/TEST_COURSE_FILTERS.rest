@@ -1,0 +1,447 @@
+### ============================================
+### COURSE FILTERS & SORTING TESTING
+### ============================================
+### Test the course filtering and sorting API
+### ============================================
+
+@baseUrl = http://localhost:5000
+@adminEmail = sharma@amu.ac.in
+@adminPassword = Teacher@123
+@token = YOUR_ADMIN_TOKEN_HERE
+
+### ============================================
+### 1. LOGIN AS ADMIN (Get Token First)
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Copy the token from response and replace @token above
+
+### ============================================
+### 2. GET ALL COURSES (No Filters)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses
+Authorization: Bearer {{token}}
+
+### Expected: All courses returned
+
+### ============================================
+### 3. FILTER BY BRANCH (COBEA)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?branch=COBEA
+Authorization: Bearer {{token}}
+
+### Expected: Only COBEA courses
+
+### ============================================
+### 4. FILTER BY SEMESTER (Semester 3)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?semester=3
+Authorization: Bearer {{token}}
+
+### Expected: Only semester 3 courses
+
+### ============================================
+### 5. FILTER BY COURSE TYPE (Theory)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?courseType=Theory
+Authorization: Bearer {{token}}
+
+### Expected: Only theory courses
+
+### ============================================
+### 6. FILTER BY COURSE TYPE (Lab)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?courseType=Lab
+Authorization: Bearer {{token}}
+
+### Expected: Only lab courses
+
+### ============================================
+### 7. FILTER CORE COURSES ONLY
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?isElective=false
+Authorization: Bearer {{token}}
+
+### Expected: Only core (non-elective) courses
+
+### ============================================
+### 8. FILTER ELECTIVE COURSES ONLY
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?isElective=true
+Authorization: Bearer {{token}}
+
+### Expected: Only elective courses
+
+### ============================================
+### 9. FILTER BY ELECTIVE GROUP
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?isElective=true&electiveGroup=ELEC-3
+Authorization: Bearer {{token}}
+
+### Expected: Only elective courses in ELEC-3 group
+
+### ============================================
+### 10. FILTER BY CREDITS RANGE (3-4 credits)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?minCredits=3&maxCredits=4
+Authorization: Bearer {{token}}
+
+### Expected: Courses with 3-4 credits
+
+### ============================================
+### 11. FILTER BY MINIMUM CREDITS (4+)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?minCredits=4
+Authorization: Bearer {{token}}
+
+### Expected: Courses with 4 or more credits
+
+### ============================================
+### 12. FILTER BY MAXIMUM CREDITS (2 or less)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?maxCredits=2
+Authorization: Bearer {{token}}
+
+### Expected: Courses with 2 or fewer credits
+
+### ============================================
+### 13. SEARCH BY COURSE CODE
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?search=COA
+Authorization: Bearer {{token}}
+
+### Expected: Courses with "COA" in code or name
+
+### ============================================
+### 14. SEARCH BY COURSE NAME
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?search=Data
+Authorization: Bearer {{token}}
+
+### Expected: Courses with "Data" in code or name
+
+### ============================================
+### 15. SEARCH (Case Insensitive)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?search=data
+Authorization: Bearer {{token}}
+
+### Expected: Same as above (case-insensitive)
+
+### ============================================
+### 16. SORT BY COURSE CODE (Ascending)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=course_code&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted A-Z by code
+
+### ============================================
+### 17. SORT BY COURSE CODE (Descending)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=course_code&sortOrder=desc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted Z-A by code
+
+### ============================================
+### 18. SORT BY COURSE NAME
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=course_name&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted A-Z by name
+
+### ============================================
+### 19. SORT BY CREDITS (Descending)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=credits&sortOrder=desc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted by credits (high to low)
+
+### ============================================
+### 20. SORT BY SEMESTER
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=semester_no&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted by semester (1-8)
+
+### ============================================
+### 21. SORT BY BRANCH
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=branch_code&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted by branch code
+
+### ============================================
+### 22. SORT BY COURSE TYPE
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=course_type&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Courses sorted by type (Lab, Project, Theory)
+
+### ============================================
+### 23. COMBINED: Branch + Semester
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?branch=COBEA&semester=3
+Authorization: Bearer {{token}}
+
+### Expected: COBEA courses in semester 3
+
+### ============================================
+### 24. COMBINED: Branch + Type + Elective
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?branch=COBEA&courseType=Theory&isElective=false
+Authorization: Bearer {{token}}
+
+### Expected: COBEA theory core courses
+
+### ============================================
+### 25. COMBINED: Search + Filter + Sort
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?search=Data&branch=COBEA&sortBy=credits&sortOrder=desc
+Authorization: Bearer {{token}}
+
+### Expected: COBEA courses with "Data", sorted by credits
+
+### ============================================
+### 26. COMBINED: Credits Range + Type + Sort
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?minCredits=3&maxCredits=4&courseType=Theory&sortBy=course_name&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Theory courses with 3-4 credits, sorted by name
+
+### ============================================
+### 27. COMBINED: All Filters
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?branch=COBEA&semester=3&courseType=Theory&isElective=false&minCredits=3&sortBy=course_code&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: COBEA semester 3 theory core courses with 3+ credits
+
+### ============================================
+### 28. EDGE CASE: Invalid Sort Field
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=invalid_field&sortOrder=asc
+Authorization: Bearer {{token}}
+
+### Expected: Falls back to course_code sorting
+
+### ============================================
+### 29. EDGE CASE: Invalid Sort Order
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=course_code&sortOrder=invalid
+Authorization: Bearer {{token}}
+
+### Expected: Falls back to ascending order
+
+### ============================================
+### 30. EDGE CASE: Empty Search
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?search=
+Authorization: Bearer {{token}}
+
+### Expected: All courses (empty search ignored)
+
+### ============================================
+### 31. PAGINATION: First Page (Default)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Expected: First 10 courses + pagination info
+
+### ============================================
+### 32. PAGINATION: Second Page
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?page=2&limit=10
+Authorization: Bearer {{token}}
+
+### Expected: Next 10 courses
+
+### ============================================
+### 33. PAGINATION: Custom Limit
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?limit=5
+Authorization: Bearer {{token}}
+
+### Expected: First 5 courses
+
+### ============================================
+### 34. PAGINATION: Max Limit (Capped at 100)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?limit=1000
+Authorization: Bearer {{token}}
+
+### Expected: Maximum 100 courses returned
+
+### ============================================
+### 35. VALIDATION ERROR: Invalid Semester (NaN)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?semester=abc
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid semester value: \"abc\". Must be a number."]
+### }
+
+### ============================================
+### 36. VALIDATION ERROR: Out of Range Semester
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?semester=99
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid semester value: 99. Must be between 1 and 8."]
+### }
+
+### ============================================
+### 37. VALIDATION ERROR: Invalid Credits (NaN)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?minCredits=abc
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid minCredits value: \"abc\". Must be a number."]
+### }
+
+### ============================================
+### 38. VALIDATION ERROR: Negative Credits
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?minCredits=-5
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid minCredits value: -5. Must be >= 0."]
+### }
+
+### ============================================
+### 39. VALIDATION ERROR: Invalid isElective
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?isElective=invalid
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid isElective value: \"invalid\". Must be \"true\" or \"false\"."]
+### }
+
+### ============================================
+### 40. VALIDATION ERROR: Invalid Course Type
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?courseType=Invalid
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid courseType: \"Invalid\". Must be one of: Theory, Lab, Project."]
+### }
+
+### ============================================
+### 41. VALIDATION ERROR: Invalid Sort Field
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortBy=invalid_field
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid sortBy value: \"invalid_field\". Must be one of: course_code, course_name, credits, semester_no, branch_code, course_type."]
+### }
+
+### ============================================
+### 42. VALIDATION ERROR: Invalid Sort Order
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?sortOrder=wrong
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid sortOrder value: \"wrong\". Must be \"asc\" or \"desc\"."]
+### }
+
+### ============================================
+### 43. VALIDATION ERROR: Invalid Page
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?page=abc
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid page value: \"abc\". Must be a positive integer."]
+### }
+
+### ============================================
+### 44. VALIDATION ERROR: Limit Too High
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?limit=200
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request
+### {
+###   "error": "Validation failed",
+###   "details": ["Invalid limit value: 200. Maximum allowed is 100."]
+### }
+
+### ============================================
+### 45. VALIDATION ERROR: Multiple Errors
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?semester=abc&minCredits=xyz&sortBy=invalid
+Authorization: Bearer {{token}}
+
+### Expected: 400 Bad Request with multiple errors
+### {
+###   "error": "Validation failed",
+###   "details": [
+###     "Invalid semester value: \"abc\". Must be a number.",
+###     "Invalid minCredits value: \"xyz\". Must be a number.",
+###     "Invalid sortBy value: \"invalid\". Must be one of: course_code, course_name, credits, semester_no, branch_code, course_type."
+###   ]
+### }
+
+### ============================================
+### 46. CRITICAL FIX: Search + Branch (Combined)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses?branch=COBEA&search=Data
+Authorization: Bearer {{token}}
+
+### Expected: Only COBEA courses with "Data" in name/code
+### This tests the AND condition fix
+
+### ============================================
+### TESTING CHECKLIST
+### ============================================
+### ✅ Test 1-30: Previous tests
+### ✅ Test 31: Pagination first page works
+### ✅ Test 32: Pagination second page works
+### ✅ Test 33: Custom limit works
+### ✅ Test 34: Max limit capped at 100
+### ✅ Test 35: Invalid semester handled
+### ✅ Test 36: Out of range semester handled
+### ✅ Test 37: Invalid credits handled
+### ✅ Test 38: Negative credits handled
+### ✅ Test 39: Invalid isElective handled
+### ✅ Test 40: Search + filter combination works correctly

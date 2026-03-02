@@ -1,0 +1,187 @@
+### ============================================
+### COURSE VALIDATION TESTING
+### ============================================
+### Test the real-time course validation endpoint
+### ============================================
+
+@baseUrl = http://localhost:5000
+@adminEmail = sharma@amu.ac.in
+@adminPassword = Teacher@123
+@token = YOUR_ADMIN_TOKEN_HERE
+
+### ============================================
+### 1. LOGIN AS ADMIN (Get Token First)
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Copy the token from response and replace @token above
+
+### ============================================
+### 2. CHECK EXISTING COURSE CODE (Should Return True)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA2131
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseCodeExists": true,
+###   "existingCourseCode": {
+###     "course_code": "COA2131",
+###     "course_name": "Data Structures"
+###   }
+### }
+
+### ============================================
+### 3. CHECK EXISTING COURSE CODE (Case Insensitive)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=coa2131
+Authorization: Bearer {{token}}
+
+### Expected: Should still find the course (case-insensitive)
+
+### ============================================
+### 4. CHECK NON-EXISTING COURSE CODE (Should Return False)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA9999
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseCodeExists": false
+### }
+
+### ============================================
+### 5. CHECK EXISTING COURSE NAME (Should Return True)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseName=Data%20Structures
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseNameExists": true,
+###   "existingCourseName": {
+###     "course_code": "COA2131",
+###     "course_name": "Data Structures"
+###   }
+### }
+
+### ============================================
+### 6. CHECK EXISTING COURSE NAME (Case Insensitive)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseName=data%20structures
+Authorization: Bearer {{token}}
+
+### Expected: Should still find the course (case-insensitive)
+
+### ============================================
+### 7. CHECK NON-EXISTING COURSE NAME (Should Return False)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseName=Advanced%20Quantum%20Computing
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseNameExists": false
+### }
+
+### ============================================
+### 8. CHECK BOTH CODE AND NAME (Existing)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA2131&courseName=Data%20Structures
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseCodeExists": true,
+###   "courseNameExists": true,
+###   "existingCourseCode": {...},
+###   "existingCourseName": {...}
+### }
+
+### ============================================
+### 9. CHECK BOTH CODE AND NAME (Mixed)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA9999&courseName=Data%20Structures
+Authorization: Bearer {{token}}
+
+### Expected Response:
+### {
+###   "courseCodeExists": false,
+###   "courseNameExists": true,
+###   "existingCourseName": {...}
+### }
+
+### ============================================
+### 10. CHECK WITHOUT PARAMETERS (Should Fail)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check
+Authorization: Bearer {{token}}
+
+### Expected Response: 400 Bad Request
+### {
+###   "error": "Provide courseCode or courseName"
+### }
+
+### ============================================
+### 11. CHECK WITHOUT TOKEN (Should Fail)
+### ============================================
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA2131
+
+### Expected Response: 401 Unauthorized
+### {
+###   "error": "No token provided"
+### }
+
+### ============================================
+### 12. CHECK AS NON-ADMIN (Should Fail)
+### ============================================
+### First login as student
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "gm7605@myamu.ac.in",
+  "password": "azx"
+}
+
+### Then try to check (use student token)
+GET {{baseUrl}}/api/teacher/courses/check?courseCode=COA2131
+Authorization: Bearer STUDENT_TOKEN_HERE
+
+### Expected Response: 403 Forbidden
+### {
+###   "error": "Admin access required"
+### }
+
+### ============================================
+### TESTING CHECKLIST
+### ============================================
+### ✅ Test 1: Admin login successful
+### ✅ Test 2: Existing course code detected
+### ✅ Test 3: Case-insensitive code matching works
+### ✅ Test 4: Non-existing course code returns false
+### ✅ Test 5: Existing course name detected
+### ✅ Test 6: Case-insensitive name matching works
+### ✅ Test 7: Non-existing course name returns false
+### ✅ Test 8: Both parameters work together
+### ✅ Test 9: Mixed results (one exists, one doesn't)
+### ✅ Test 10: Missing parameters rejected
+### ✅ Test 11: No token rejected
+### ✅ Test 12: Non-admin access rejected
+
+### ============================================
+### SAMPLE EXISTING COURSES (From Seed Data)
+### ============================================
+### COA2131 - Data Structures
+### COA2132 - Digital Logic Design
+### AMS1121 - Applied Mathematics-I
+### APS1111 - Applied Physics-I
+### ELA2331 - Electronic Circuits
+### COA2141 - Algorithms
+### COA2142 - Database Management Systems

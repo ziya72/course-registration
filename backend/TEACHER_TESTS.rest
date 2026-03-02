@@ -1,0 +1,208 @@
+### Teacher/Admin Dashboard API Tests
+### Base URL
+@baseUrl = http://localhost:5000
+@token = YOUR_TOKEN_HERE
+
+### ============================================================================
+### AUTHENTICATION - Get Token First
+### ============================================================================
+
+### Login as Teacher/Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "sharma@amu.ac.in",
+  "password": "Teacher@123"
+}
+
+### ============================================================================
+### TEACHER DASHBOARD ENDPOINTS
+### ============================================================================
+
+### Get Dashboard Data
+GET {{baseUrl}}/api/teacher/dashboard
+Authorization: Bearer {{token}}
+
+### Get All Students
+GET {{baseUrl}}/api/teacher/students
+Authorization: Bearer {{token}}
+
+### Get Students with Search Filter
+GET {{baseUrl}}/api/teacher/students?search=gaurav
+Authorization: Bearer {{token}}
+
+### Get Students by Branch
+GET {{baseUrl}}/api/teacher/students?branch=COBEA
+Authorization: Bearer {{token}}
+
+### Get Students by Semester
+GET {{baseUrl}}/api/teacher/students?semester=1
+Authorization: Bearer {{token}}
+
+### Get Students by Status
+GET {{baseUrl}}/api/teacher/students?status=active
+Authorization: Bearer {{token}}
+
+### Get All Courses
+GET {{baseUrl}}/api/teacher/courses
+Authorization: Bearer {{token}}
+
+### Get Pending Approvals
+GET {{baseUrl}}/api/teacher/approvals
+Authorization: Bearer {{token}}
+
+### Approve Registration (replace :id with actual registration_id)
+POST {{baseUrl}}/api/teacher/approvals/1/approve
+Authorization: Bearer {{token}}
+
+### Reject Registration (replace :id with actual registration_id)
+POST {{baseUrl}}/api/teacher/approvals/2/reject
+Authorization: Bearer {{token}}
+
+### Get Registration Statistics
+GET {{baseUrl}}/api/teacher/reports/stats
+Authorization: Bearer {{token}}
+
+### ============================================================================
+### ADMIN-ONLY ENDPOINTS
+### ============================================================================
+
+### Update Student Status (Admin Only)
+PUT {{baseUrl}}/api/teacher/students/gm7605/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Add New Course (Admin Only)
+POST {{baseUrl}}/api/teacher/courses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "courseCode": "CS201",
+  "courseName": "Algorithms",
+  "credits": 4,
+  "semesterNo": 3,
+  "branchCode": "COBEA",
+  "isElective": false,
+  "courseType": "Theory"
+}
+
+### Update Course (Admin Only)
+PUT {{baseUrl}}/api/teacher/courses/CS201
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "courseName": "Advanced Algorithms",
+  "credits": 4
+}
+
+### Delete Course (Admin Only)
+DELETE {{baseUrl}}/api/teacher/courses/CS201
+Authorization: Bearer {{token}}
+
+### Add Prerequisite (Admin Only)
+POST {{baseUrl}}/api/teacher/courses/CS102/prerequisites
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "prerequisiteCourseCode": "CS101",
+  "minGrade": "5.0"
+}
+
+### Update Prerequisite (Admin Only)
+PUT {{baseUrl}}/api/teacher/courses/CS102/prerequisites/CS101
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "minGrade": "6.0"
+}
+
+### Delete Prerequisite (Admin Only)
+DELETE {{baseUrl}}/api/teacher/courses/CS102/prerequisites/CS101
+Authorization: Bearer {{token}}
+
+### Get Registration Rules (Admin Only)
+GET {{baseUrl}}/api/teacher/rules
+Authorization: Bearer {{token}}
+
+### Update Registration Rule (Admin Only)
+PUT {{baseUrl}}/api/teacher/rules/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "22",
+  "isActive": true
+}
+
+### ============================================================================
+### TESTING WORKFLOW
+### ============================================================================
+
+### 1. Login and copy the token
+### 2. Replace {{token}} with actual token above
+### 3. Test dashboard endpoint
+### 4. Test students list
+### 5. Test courses list
+### 6. Test approvals (if any pending)
+### 7. Test admin endpoints (course CRUD, prerequisites)
+
+### ============================================================================
+### EXPECTED RESPONSES
+### ============================================================================
+
+### Dashboard Response:
+# {
+#   "teacher": {
+#     "id": 1,
+#     "name": "Dr. Sharma",
+#     "email": "sharma@amu.ac.in",
+#     "department": "Computer Engineering",
+#     "role": "admin"
+#   },
+#   "statistics": {
+#     "totalStudents": 3,
+#     "activeStudents": 2,
+#     "totalCourses": 4,
+#     "pendingApprovals": 0
+#   },
+#   "recentActivity": [...]
+# }
+
+### Students Response:
+# {
+#   "students": [
+#     {
+#       "enrollmentNo": "gm7605",
+#       "name": "Gaurav Mishra",
+#       "email": "gm7605@myamu.ac.in",
+#       "branch": "Computer Engineering",
+#       "semester": 1,
+#       "cpi": 0.0,
+#       "status": "active"
+#     }
+#   ],
+#   "total": 3
+# }
+
+### Courses Response:
+# {
+#   "courses": [
+#     {
+#       "courseCode": "CS101",
+#       "courseName": "Programming Fundamentals",
+#       "credits": 4,
+#       "semester": 1,
+#       "prerequisites": []
+#     }
+#   ],
+#   "total": 4
+# }

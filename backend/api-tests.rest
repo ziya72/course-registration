@@ -1,0 +1,798 @@
+### Course Registration Backend - API Tests
+### Base URL
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+### COMPLETE OTP VERIFICATION FLOW TEST
+
+### TEST 1: Request OTP for Student
+# Expected: OTP generated and logged to console
+# Check console for OTP code
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in"
+}
+
+### TEST 2: Try to Request OTP Again (Should Fail - Within 5 min window)
+# Expected: Error - "OTP already sent. Please wait X minutes before requesting a new one."
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in"
+}
+
+### TEST 3: Verify OTP with WRONG code (Attempt 1/3)
+# Expected: Error - "Invalid OTP. 2 attempts remaining."
+# Replace "000000" with wrong OTP
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "otp": "000000"
+}
+
+### TEST 4: Verify OTP with WRONG code (Attempt 2/3)
+# Expected: Error - "Invalid OTP. 1 attempt remaining."
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "otp": "655328"
+}
+
+### TEST 5: Verify OTP with CORRECT code
+# Expected: Success - "OTP verified"
+# Replace "123456" with the actual OTP from console
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "otp": "247055"
+}
+
+### TEST 6: Register Student (After OTP Verification)
+# Expected: Success - Returns accessToken
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "Student@123",
+  "confirmPassword": "Student@123"
+}
+
+### TEST 7: Login with Registered Student
+# Expected: Success - Returns accessToken
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "Student@123",
+  "rememberMe": false
+}
+
+### MAX ATTEMPTS TEST (Use Different Email)
+
+### STEP 1: Request OTP for Another Student
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in"
+}
+
+### STEP 2: Wrong OTP - Attempt 1/3
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "otp": "000000"
+}
+
+### STEP 3: Wrong OTP - Attempt 2/3
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "otp": "111111"
+}
+
+### STEP 4: Wrong OTP - Attempt 3/3
+# Expected: Error - "Invalid OTP. 0 attempts remaining."
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "otp": "222222"
+}
+
+### STEP 5: Try Again After Max Attempts
+# Expected: Error - "Maximum verification attempts exceeded. Please wait for OTP to expire and request a new one."
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "otp": "333333"
+}
+
+### STEP 6: Try to Request New OTP (Should Fail - Within 5 min)
+# Expected: Error - "OTP already sent. Please wait X minutes before requesting a new one."
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in"
+}
+
+### OTP EXPIRY TEST (Wait 5+ minutes)
+
+### STEP 1: Request OTP
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in"
+}
+
+### STEP 2: Wait 5+ minutes, then try to verify
+# Expected: Error - "OTP expired. Please request a new one."
+# NOTE: Wait at least 5 minutes before running this
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in",
+  "otp": "123456"
+}
+
+### STEP 3: Request New OTP After Expiry (Should Succeed)
+# Expected: Success - New OTP generated
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in"
+}
+
+### TEACHER LOGIN TEST
+
+### Teacher Login (Pre-created by Admin)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in",
+  "password": "Hello@123",
+  "rememberMe": false
+}
+
+### Teacher Login with Remember Me (7 days token)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in",
+  "password": "Hello@123",
+  "rememberMe": true
+}
+
+### ERROR CASES
+
+### Invalid Email Format
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "invalid@gmail.com"
+}
+
+### Non-existent Student
+POST {{baseUrl}}/auth/request-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "nonexistent@myamu.ac.in"
+}
+
+### Register Without OTP Verification
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "gp1212@myamu.ac.in",
+  "password": "Student@123",
+  "confirmPassword": "Student@123"
+}
+
+### Register with Mismatched Passwords
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "Student@123",
+  "confirmPassword": "DifferentPassword@123"
+}
+
+### Verify OTP Without Requesting First
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: {{contentType}}
+
+{
+  "email": "newstudent@myamu.ac.in",
+  "otp": "123456"
+}
+
+### TESTING INSTRUCTIONS
+
+# 1. Start with TEST 1 - Request OTP
+# 2. Check the server console for the generated OTP
+# 3. Copy the OTP from console
+# 4. Replace "123456" in TEST 5 with the actual OTP
+# 5. Run tests in sequence to see the complete flow
+# 6. For OTP expiry test, wait 5+ minutes between STEP 1 and STEP 2
+# 7. Each test shows expected behavior in comments
+
+###############################################
+### QUICK REFERENCE
+###############################################
+
+# OTP Configuration:
+# - Expiry: 5 minutes
+# - Max Attempts: 3
+# - Cannot request new OTP until current expires
+# - OTP is logged to server console
+
+# Token Expiry:
+# - rememberMe: false → 1 hour
+# - rememberMe: true → 7 days
+
+
+###############################################
+### MIDDLEWARE TESTING
+###############################################
+
+### Variables for tokens (update after login)
+@studentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@teacherToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+###############################################
+### LOGIN TO GET TOKENS
+###############################################
+
+### Login as Student
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "Student@123"
+}
+
+### Login as Teacher
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in",
+  "password": "Hello@123"
+}
+
+### Login as Admin
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@amu.ac.in",
+  "password": "Admin@123"
+}
+
+###############################################
+### PUBLIC ROUTES (No Auth Required)
+###############################################
+
+### Public Route - No Token Needed
+GET {{baseUrl}}/api/public
+
+###############################################
+### AUTHENTICATED ROUTES (Any Role)
+###############################################
+
+### Protected Route - Requires Any Valid Token
+GET {{baseUrl}}/api/protected
+Authorization: Bearer {{studentToken}}
+
+### Universal Dashboard - Any Authenticated User
+GET {{baseUrl}}/api/dashboard
+Authorization: Bearer {{studentToken}}
+
+###############################################
+### STUDENT-ONLY ROUTES
+###############################################
+
+### Student Dashboard - Only Students
+GET {{baseUrl}}/api/student/dashboard
+Authorization: Bearer {{studentToken}}
+
+### Student Dashboard - Teacher Tries (Should Fail)
+GET {{baseUrl}}/api/student/dashboard
+Authorization: Bearer {{teacherToken}}
+
+### My Courses - Only Students
+GET {{baseUrl}}/api/student/my-courses
+Authorization: Bearer {{studentToken}}
+
+###############################################
+### TEACHER ROUTES (Teachers + Admins)
+###############################################
+
+### Teacher Dashboard - Teacher Access
+GET {{baseUrl}}/api/teacher/dashboard
+Authorization: Bearer {{teacherToken}}
+
+### Teacher Dashboard - Admin Access (Should Work)
+GET {{baseUrl}}/api/teacher/dashboard
+Authorization: Bearer {{adminToken}}
+
+### Teacher Dashboard - Student Tries (Should Fail)
+GET {{baseUrl}}/api/teacher/dashboard
+Authorization: Bearer {{studentToken}}
+
+### View All Students - Teacher/Admin Only
+GET {{baseUrl}}/api/teacher/students
+Authorization: Bearer {{teacherToken}}
+
+### Upload Grades - Teacher/Admin Only
+POST {{baseUrl}}/api/teacher/upload-grades
+Authorization: Bearer {{teacherToken}}
+Content-Type: {{contentType}}
+
+{
+  "courseCode": "CS101",
+  "grades": [
+    { "enrollmentNo": "gm0001", "grade": "A" }
+  ]
+}
+
+###############################################
+### ADMIN-ONLY ROUTES
+###############################################
+
+### Admin Dashboard - Admin Only
+GET {{baseUrl}}/api/admin/dashboard
+Authorization: Bearer {{adminToken}}
+
+### Admin Dashboard - Teacher Tries (Should Fail)
+GET {{baseUrl}}/api/admin/dashboard
+Authorization: Bearer {{teacherToken}}
+
+### Create Teacher - Admin Only
+POST {{baseUrl}}/api/admin/create-teacher
+Authorization: Bearer {{adminToken}}
+Content-Type: {{contentType}}
+
+{
+  "name": "New Teacher",
+  "email": "newteacher@amu.ac.in",
+  "password": "Teacher@123"
+}
+
+### Delete User - Admin Only
+DELETE {{baseUrl}}/api/admin/delete-user/123
+Authorization: Bearer {{adminToken}}
+
+###############################################
+### OWNER OR ADMIN ROUTES
+###############################################
+
+### Student Views Own Profile (Should Work)
+GET {{baseUrl}}/api/student/gm0001/profile
+Authorization: Bearer {{studentToken}}
+
+### Student Views Another's Profile (Should Fail)
+GET {{baseUrl}}/api/student/gq5012/profile
+Authorization: Bearer {{studentToken}}
+
+### Teacher Views Any Profile (Should Work)
+GET {{baseUrl}}/api/student/gm0001/profile
+Authorization: Bearer {{teacherToken}}
+
+### Admin Views Any Profile (Should Work)
+GET {{baseUrl}}/api/student/gm0001/profile
+Authorization: Bearer {{adminToken}}
+
+### Student Views Own Grades (Should Work)
+GET {{baseUrl}}/api/student/gm0001/grades
+Authorization: Bearer {{studentToken}}
+
+### Teacher Views Any Grades (Should Work)
+GET {{baseUrl}}/api/student/gq5012/grades
+Authorization: Bearer {{teacherToken}}
+
+###############################################
+### FLEXIBLE AUTHORIZATION TESTS
+###############################################
+
+### Reports - Teachers and Admins Only
+GET {{baseUrl}}/api/reports
+Authorization: Bearer {{teacherToken}}
+
+### Reports - Student Tries (Should Fail)
+GET {{baseUrl}}/api/reports
+Authorization: Bearer {{studentToken}}
+
+###############################################
+### ERROR CASES
+###############################################
+
+### No Token Provided
+GET {{baseUrl}}/api/protected
+
+### Invalid Token
+GET {{baseUrl}}/api/protected
+Authorization: Bearer invalid.token.here
+
+### Expired Token (Use an old token)
+GET {{baseUrl}}/api/protected
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.expired
+
+###############################################
+### TESTING INSTRUCTIONS FOR MIDDLEWARE
+###############################################
+
+# 1. Login as different users to get tokens:
+#    - Student: gm0001@myamu.ac.in / Student@123
+#    - Teacher: sadaf@amu.ac.in / Hello@123
+#    - Admin: Create an admin user first or update teacher role to "admin"
+
+# 2. Copy the accessToken from login responses
+
+# 3. Update the variables at the top:
+#    @studentToken = <paste-student-token>
+#    @teacherToken = <paste-teacher-token>
+#    @adminToken = <paste-admin-token>
+
+# 4. Run tests to verify:
+#    ✅ Students can only access student routes
+#    ✅ Teachers can access teacher + student routes
+#    ✅ Admins can access all routes (superset)
+#    ✅ Students can only view their own resources
+#    ✅ Teachers/Admins can view any resources
+
+###############################################
+### ROLE HIERARCHY SUMMARY
+###############################################
+
+# admin (Level 3)
+#   ↓ Can access: admin, teacher, student routes
+# teacher (Level 2)
+#   ↓ Can access: teacher, student routes
+# student (Level 1)
+#   ↓ Can access: student routes only
+
+###############################################
+### FORGOT PASSWORD & LOGOUT TESTS
+###############################################
+
+###############################################
+### FORGOT PASSWORD - STUDENT
+###############################################
+
+### STEP 1: Request Password Reset for Student
+# Expected: Reset token generated and logged to console
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in"
+}
+
+### STEP 2: Try to Request Again (Should Fail - Within 15 min window)
+# Expected: Error - "Password reset token already sent. Please wait X minutes before requesting a new one."
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in"
+}
+
+### STEP 3: Reset Password with WRONG token (Attempt 1/3)
+# Expected: Error - "Invalid reset token. 2 attempts remaining."
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "token": "000000",
+  "newPassword": "NewPassword@123",
+  "confirmPassword": "NewPassword@123"
+}
+
+### STEP 4: Reset Password with WRONG token (Attempt 2/3)
+# Expected: Error - "Invalid reset token. 1 attempt remaining."
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "token": "111111",
+  "newPassword": "NewPassword@123",
+  "confirmPassword": "NewPassword@123"
+}
+
+### STEP 5: Reset Password with CORRECT token
+# Expected: Success - "Password reset successfully"
+# Replace "123456" with actual token from console
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "token": "123456",
+  "newPassword": "NewPassword@123",
+  "confirmPassword": "NewPassword@123"
+}
+
+### STEP 6: Login with New Password
+# Expected: Success - Returns accessToken
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "NewPassword@123"
+}
+
+###############################################
+### FORGOT PASSWORD - TEACHER
+###############################################
+
+### Request Password Reset for Teacher
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in"
+}
+
+### Reset Teacher Password
+# Replace "123456" with actual token from console
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in",
+  "token": "123456",
+  "newPassword": "NewTeacher@123",
+  "confirmPassword": "NewTeacher@123"
+}
+
+### Login with New Teacher Password
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "sadaf@amu.ac.in",
+  "password": "NewTeacher@123"
+}
+
+###############################################
+### FORGOT PASSWORD - MAX ATTEMPTS TEST
+###############################################
+
+### STEP 1: Request Reset Token
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in"
+}
+
+### STEP 2: Wrong Token - Attempt 1/3
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "token": "000000",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+### STEP 3: Wrong Token - Attempt 2/3
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "token": "111111",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+### STEP 4: Wrong Token - Attempt 3/3
+# Expected: Error - "Invalid reset token. 0 attempts remaining."
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "token": "222222",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+### STEP 5: Try Again After Max Attempts
+# Expected: Error - "Maximum verification attempts exceeded. Please wait for token to expire and request a new one."
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gq5012@myamu.ac.in",
+  "token": "333333",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+###############################################
+### FORGOT PASSWORD - EXPIRY TEST
+###############################################
+
+### STEP 1: Request Reset Token
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in"
+}
+
+### STEP 2: Wait 15+ minutes, then try to reset
+# Expected: Error - "Reset token expired. Please request a new one."
+# NOTE: Wait at least 15 minutes before running this
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in",
+  "token": "123456",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+### STEP 3: Request New Token After Expiry (Should Succeed)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm7605@myamu.ac.in"
+}
+
+###############################################
+### LOGOUT TESTS
+###############################################
+
+### STEP 1: Login to Get Token
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "password": "Student@123"
+}
+
+### STEP 2: Use Token to Access Protected Route (Should Work)
+# Copy the token from STEP 1 and paste below
+GET {{baseUrl}}/api/protected
+Authorization: Bearer <paste-token-here>
+
+### STEP 3: Logout
+# Use the same token from STEP 1
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer <paste-token-here>
+
+### STEP 4: Try to Access Protected Route Again (Should Fail)
+# Expected: Error - "Token has been revoked"
+GET {{baseUrl}}/api/protected
+Authorization: Bearer <paste-token-here>
+
+### STEP 5: Try to Logout Again with Same Token (Should Fail)
+# Expected: Error - "Token has been revoked"
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer <paste-token-here>
+
+###############################################
+### LOGOUT - MULTIPLE USERS
+###############################################
+
+### Student Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{studentToken}}
+
+### Teacher Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{teacherToken}}
+
+### Admin Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{adminToken}}
+
+###############################################
+### FORGOT PASSWORD - ERROR CASES
+###############################################
+
+### Non-existent User
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "nonexistent@myamu.ac.in"
+}
+
+### Reset Without Requesting Token First
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "newuser@myamu.ac.in",
+  "token": "123456",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "NewPass@123"
+}
+
+### Reset with Mismatched Passwords
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "email": "gm0001@myamu.ac.in",
+  "token": "123456",
+  "newPassword": "NewPass@123",
+  "confirmPassword": "DifferentPass@123"
+}
+
+### Invalid Email Format
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "invalid-email"
+}
+
+###############################################
+### TESTING INSTRUCTIONS - FORGOT PASSWORD & LOGOUT
+###############################################
+
+# FORGOT PASSWORD:
+# 1. Request password reset (STEP 1)
+# 2. Check server console for reset token
+# 3. Copy the token and use it in STEP 5
+# 4. Test wrong tokens first (STEP 3-4) to see attempt tracking
+# 5. Use correct token to reset password
+# 6. Login with new password to verify
+
+# LOGOUT:
+# 1. Login to get a fresh token
+# 2. Copy the accessToken from response
+# 3. Replace <paste-token-here> with actual token
+# 4. Test accessing protected route before logout (should work)
+# 5. Logout using the token
+# 6. Try accessing protected route again (should fail)
+
+# CONFIGURATION:
+# - Reset Token Expiry: 15 minutes
+# - Max Attempts: 3
+# - Cannot request new token until current expires
+# - Token is logged to server console
+# - Logout uses token blacklist (stateless approach)

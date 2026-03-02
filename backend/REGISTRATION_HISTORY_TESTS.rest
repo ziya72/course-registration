@@ -1,0 +1,133 @@
+### ============================================
+### REGISTRATION HISTORY TESTS (Phase 4)
+### ============================================
+### Testing soft delete and registration history
+### ============================================
+
+@baseUrl = http://localhost:5000/api
+@studentEmail = gm7605@myamu.ac.in
+@studentPassword = azx
+
+### ============================================
+### 1. LOGIN AS STUDENT
+### ============================================
+POST http://localhost:5000/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "{{studentPassword}}"
+}
+
+### Save the token from response and use it below
+@token = YOUR_TOKEN_HERE
+
+### ============================================
+### 2. GET AVAILABLE COURSES
+### ============================================
+GET {{baseUrl}}/courses/available
+Authorization: Bearer {{token}}
+
+### ============================================
+### 3. REGISTER FOR A COURSE
+### ============================================
+POST {{baseUrl}}/courses/register
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "course_code": "ELBEA301"
+}
+
+### ============================================
+### 4. GET DASHBOARD (Check registered courses)
+### ============================================
+GET {{baseUrl}}/student/dashboard
+Authorization: Bearer {{token}}
+
+### Should show registeredCourses array with the course
+
+### ============================================
+### 5. DROP THE COURSE (Soft Delete)
+### ============================================
+DELETE {{baseUrl}}/courses/drop/ELBEA301
+Authorization: Bearer {{token}}
+
+### Should set deleted_at timestamp, not hard delete
+
+### ============================================
+### 6. GET DASHBOARD AGAIN (Course should be gone)
+### ============================================
+GET {{baseUrl}}/student/dashboard
+Authorization: Bearer {{token}}
+
+### registeredCourses should be empty now
+
+### ============================================
+### 7. GET REGISTRATION HISTORY (Should show dropped course)
+### ============================================
+GET {{baseUrl}}/student/registration-history
+Authorization: Bearer {{token}}
+
+### Should show:
+### - history array with the dropped course
+### - status: "Dropped"
+### - droppedAt: timestamp
+### - statistics with droppedRegistrations count
+
+### ============================================
+### 8. TRY TO DROP SAME COURSE AGAIN (Should Fail)
+### ============================================
+DELETE {{baseUrl}}/courses/drop/ELBEA301
+Authorization: Bearer {{token}}
+
+### Should return 404: "Not registered for this course"
+### Because deleted_at is not null
+
+### ============================================
+### 9. RE-REGISTER FOR THE SAME COURSE
+### ============================================
+POST {{baseUrl}}/courses/register
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "course_code": "ELBEA301"
+}
+
+### Should work - creates new registration record
+
+### ============================================
+### 10. GET REGISTRATION HISTORY AGAIN
+### ============================================
+GET {{baseUrl}}/student/registration-history
+Authorization: Bearer {{token}}
+
+### Should show:
+### - 2 records for ELBEA301
+### - One with status "Dropped" (old)
+### - One with status "Active" (new)
+
+### ============================================
+### TESTING CHECKLIST
+### ============================================
+### ✅ Test 1: Student login works
+### ✅ Test 2: Can view available courses
+### ✅ Test 3: Can register for a course
+### ✅ Test 4: Dashboard shows registered course
+### ✅ Test 5: Drop course sets deleted_at (soft delete)
+### ✅ Test 6: Dashboard no longer shows dropped course
+### ✅ Test 7: Registration history shows dropped course
+### ✅ Test 8: Cannot drop already dropped course
+### ✅ Test 9: Can re-register for dropped course
+### ✅ Test 10: History shows both records
+
+### ============================================
+### EXPECTED BEHAVIOR
+### ============================================
+### 1. Dropping a course sets deleted_at timestamp
+### 2. Dashboard filters out soft-deleted registrations
+### 3. Available courses filters out soft-deleted registrations
+### 4. Registration history shows ALL registrations
+### 5. Can re-register for previously dropped courses
+### 6. Each registration has unique registration_id

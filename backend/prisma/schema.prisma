@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FacultyNumber {
+  faculty_no     String   @id
+  admission_year Int
+  branch_code    String
+  branch_name    String
+  roll_number    String
+  program_type   String   @default("B.Tech")
+  student        Student?
+}
+
+model Student {
+  enrollment_no    String               @id
+  faculty_no       String               @unique
+  name             String
+  email            String               @unique
+  password_hash    String
+  current_semester Int                  @default(1)
+  current_cpi      Decimal              @default(0.00)
+  hall             String?
+  is_active        Boolean              @default(false)
+  created_at       DateTime             @default(now())
+  updated_at       DateTime             @updatedAt
+  registrations    CourseRegistration[]
+  grades           GradeRecord[]
+  results          SemesterResult[]
+  faculty          FacultyNumber        @relation(fields: [faculty_no], references: [faculty_no])
+}
+
+model Course {
+  course_code    String               @id
+  course_name    String
+  credits        Int
+  semester_no    Int
+  branch_code    String
+  is_elective    Boolean              @default(false)
+  elective_group String?
+  course_type    String               @default("Theory")
+  created_at     DateTime             @default(now())
+  prerequisites  CoursePrerequisite[] @relation("CoursePrereq")
+  requiredBy     CoursePrerequisite[] @relation("PrereqFor")
+  registrations  CourseRegistration[]
+  schedules      CourseSchedule[]
+  grades         GradeRecord[]
+}
+
+model CoursePrerequisite {
+  prerequisite_id          Int    @id @default(autoincrement())
+  course_code              String
+  prerequisite_course_code String
+  min_grade                String @default("P")
+  course                   Course @relation("CoursePrereq", fields: [course_code], references: [course_code])
+  prerequisite             Course @relation("PrereqFor", fields: [prerequisite_course_code], references: [course_code])
+}
+
+model ElectiveGroup {
+  group_id      Int     @id @default(autoincrement())
+  group_code    String
+  group_name    String?
+  branch_code   String
+  semester_no   Int
+  min_selection Int     @default(1)
+  max_selection Int     @default(1)
+}
+
+model Teacher {
+  teacher_id    Int        @id @default(autoincrement())
+  name          String
+  email         String     @unique
+  password_hash String
+  role          String     @default("teacher")
+  department    String?
+  is_active     Boolean    @default(true)
+  created_at    DateTime   @default(now())
+  auditLogs     AuditLog[]
+}
+
+model GradeRecord {
+  grade_id       Int      @id @default(autoincrement())
+  enrollment_no  String
+  faculty_no     String
+  course_code    String
+  academic_year  Int
+  semester_type  Int
+  grade          String?
+  grade_points   Decimal?
+  is_backlog     Boolean  @default(false)
+  is_improvement Boolean  @default(false)
+  uploaded_at    DateTime @default(now())
+  course         Course   @relation(fields: [course_code], references: [course_code])
+  student        Student  @relation(fields: [enrollment_no], references: [enrollment_no])
+}
+
+model SemesterResult {
+  result_id               Int       @id @default(autoincrement())
+  enrollment_no           String
+  faculty_no              String
+  academic_year           Int
+  semester_no             Int
+  semester_type           Int
+  branch_code             String
+  name                    String
+  spi                     Decimal?
+  cpi                     Decimal?
+  total_credits_earned    Int       @default(0)
+  result_status           String?
+  result_declaration_date DateTime?
+  is_result_declared      Boolean   @default(false)
+  remarks                 String?
+  student                 Student   @relation(fields: [enrollment_no], references: [enrollment_no])
+}
+
+model CourseRegistration {
+  registration_id   Int       @id @default(autoincrement())
+  enrollment_no     String
+  course_code       String
+  academic_year     Int
+  semester_type     Int
+  registration_type String    @default("regular")
+  is_approved       Boolean   @default(false)
+  registered_at     DateTime  @default(now())
+  deleted_at        DateTime? // Soft delete timestamp
+  course            Course    @relation(fields: [course_code], references: [course_code])
+  student           Student   @relation(fields: [enrollment_no], references: [enrollment_no])
+}
+
+model CourseSchedule {
+  schedule_id   Int       @id @default(autoincrement())
+  course_code   String
+  academic_year Int
+  semester_type Int
+  day_of_week   String?
+  start_time    DateTime?
+  end_time      DateTime?
+  course        Course    @relation(fields: [course_code], references: [course_code])
+}
+
+model RegistrationPeriod {
+  period_id     Int      @id @default(autoincrement())
+  academic_year Int
+  semester_type Int
+  branch_code   String?
+  start_date    DateTime
+  end_date      DateTime
+  is_active     Boolean  @default(true)
+  period_type   String   @default("regular")
+  created_at    DateTime @default(now())
+}
+
+model RegistrationPhase {
+  phase_id      Int       @id @default(autoincrement())
+  phase_name    String    // "REGULAR", "LATE", "ADD_DROP", "WITHDRAWAL", "FREEZE"
+  phase_label   String    // Display name
+  academic_year Int
+  semester_type Int
+  start_date    DateTime?
+  end_date      DateTime?
+  is_active     Boolean   @default(false)
+  is_enabled    Boolean   @default(true) // Can be toggled on/off
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  @@unique([phase_name, academic_year, semester_type])
+}
+
+model RegistrationRule {
+  rule_id    Int      @id @default(autoincrement())
+  rule_name  String
+  rule_type  String
+  rule_value String?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model AuditLog {
+  log_id           Int      @id @default(autoincrement())
+  action_type      String
+  performed_by     Int?
+  action_details   String?
+  affected_records Int      @default(0)
+  timestamp        DateTime @default(now())
+  teacher          Teacher? @relation(fields: [performed_by], references: [teacher_id])
+}

@@ -1,0 +1,344 @@
+### ============================================
+### AUTH ROUTES TESTING
+### ============================================
+### Use REST Client extension in VS Code
+### Click "Send Request" above each request
+### ============================================
+
+@baseUrl = http://localhost:5000
+@studentEmail = gm7605@myamu.ac.in
+@studentPassword = Student@123
+@teacherEmail = sharma@amu.ac.in
+@teacherPassword = Teacher@123
+@newStudentEmail = gq5012@myamu.ac.in
+
+### ============================================
+### 1. TEST ENDPOINT (Health Check)
+### ============================================
+GET {{baseUrl}}/test
+Content-Type: application/json
+
+### ============================================
+### 2. STUDENT LOGIN (Existing Active Student)
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "{{studentPassword}}"
+}
+
+### Expected Response:
+### {
+###   "token": "eyJhbGc...",
+###   "user": {
+###     "id": "gm7605",
+###     "name": "Gaurav Mishra",
+###     "email": "gm7605@myamu.ac.in",
+###     "role": "student"
+###   }
+### }
+
+### ============================================
+### 3. STUDENT LOGIN WITH REMEMBER ME
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "{{studentPassword}}",
+  "rememberMe": true
+}
+
+### ============================================
+### 4. TEACHER LOGIN
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{teacherEmail}}",
+  "password": "{{teacherPassword}}"
+}
+
+### Expected Response:
+### {
+###   "token": "eyJhbGc...",
+###   "user": {
+###     "id": "1",
+###     "name": "Dr. Sharma",
+###     "email": "sharma@amu.ac.in",
+###     "role": "teacher"
+###   }
+### }
+
+### ============================================
+### 5. LOGIN WITH WRONG PASSWORD (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "password": "WrongPassword123"
+}
+
+### Expected Response: 401 Unauthorized
+### { "error": "Invalid credentials" }
+
+### ============================================
+### 6. LOGIN WITH NON-EXISTENT USER (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@myamu.ac.in",
+  "password": "SomePassword123"
+}
+
+### Expected Response: 401 Unauthorized
+### { "error": "Invalid credentials" }
+
+### ============================================
+### 7. REQUEST OTP (For New Student Registration)
+### ============================================
+POST {{baseUrl}}/auth/request-otp
+Content-Type: application/json
+
+{
+  "email": "{{newStudentEmail}}"
+}
+
+### Expected Response:
+### { "message": "OTP sent (check console)" }
+### Check backend terminal for OTP code
+
+### ============================================
+### 8. VERIFY OTP (Use OTP from backend console)
+### ============================================
+### IMPORTANT: Replace "123456" with actual OTP from backend terminal
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "{{newStudentEmail}}",
+  "otp": "919238"
+}
+
+### Expected Response:
+### { "message": "OTP verified" }
+
+### ============================================
+### 9. VERIFY OTP WITH WRONG CODE (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "{{newStudentEmail}}",
+  "otp": "000000"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "Invalid OTP. X attempts remaining." }
+
+### ============================================
+### 10. REGISTER NEW STUDENT (After OTP Verification)
+### ============================================
+### IMPORTANT: Must verify OTP first (step 8)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{newStudentEmail}}",
+  "password": "NewStudent@123",
+  "confirmPassword": "NewStudent@123"
+}
+
+### Expected Response:
+### {
+###   "token": "eyJhbGc...",
+###   "user": {
+###     "id": "gq5012",
+###     "name": "Test Student",
+###     "email": "gq5012@myamu.ac.in",
+###     "role": "student"
+###   }
+### }
+
+### ============================================
+### 11. REGISTER WITHOUT OTP VERIFICATION (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "gp1212@amu.ac.in",
+  "password": "SomePassword@123",
+  "confirmPassword": "SomePassword@123"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "OTP verification required" }
+
+### ============================================
+### 12. REGISTER WITH MISMATCHED PASSWORDS (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{newStudentEmail}}",
+  "password": "Password123",
+  "confirmPassword": "DifferentPassword123"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "Passwords do not match" }
+
+### ============================================
+### 13. FORGOT PASSWORD (Student)
+### ============================================
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}"
+}
+
+### Expected Response:
+### { "message": "Password reset token sent (check console)" }
+### Check backend terminal for reset token
+
+### ============================================
+### 14. FORGOT PASSWORD (Teacher)
+### ============================================
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{teacherEmail}}"
+}
+
+### Expected Response:
+### { "message": "Password reset token sent (check console)" }
+
+### ============================================
+### 15. FORGOT PASSWORD (Non-existent User - Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "nonexistent@myamu.ac.in"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "User not found" }
+
+### ============================================
+### 16. RESET PASSWORD (Use token from backend console)
+### ============================================
+### IMPORTANT: Replace "RESET_TOKEN_HERE" with actual token from backend terminal
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "token": "259610",
+  "newPassword": "NewPassword@123",
+  "confirmPassword": "NewPassword@123"
+}
+
+### Expected Response:
+### { "message": "Password reset successfully" }
+
+### ============================================
+### 17. RESET PASSWORD WITH WRONG TOKEN (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "token": "WRONG_TOKEN",
+  "newPassword": "NewPassword@123",
+  "confirmPassword": "NewPassword@123"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "Invalid reset token. X attempts remaining." }
+
+### ============================================
+### 18. RESET PASSWORD WITH MISMATCHED PASSWORDS (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{studentEmail}}",
+  "token": "SOME_TOKEN",
+  "newPassword": "Password123",
+  "confirmPassword": "DifferentPassword123"
+}
+
+### Expected Response: 400 Bad Request
+### { "error": "Passwords do not match" }
+
+### ============================================
+### 19. LOGOUT (Need valid token)
+### ============================================
+### IMPORTANT: Replace "YOUR_TOKEN_HERE" with actual token from login response
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Expected Response:
+### { "message": "Logged out successfully" }
+
+### ============================================
+### 20. LOGOUT WITHOUT TOKEN (Should Fail)
+### ============================================
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+### Expected Response: 401 Unauthorized
+### { "error": "No token provided" }
+
+### ============================================
+### TESTING CHECKLIST
+### ============================================
+### ✅ Test 1: Health check works
+### ✅ Test 2: Student login successful
+### ✅ Test 3: Student login with remember me
+### ✅ Test 4: Teacher login successful
+### ✅ Test 5: Wrong password fails
+### ✅ Test 6: Non-existent user fails
+### ✅ Test 7: OTP request successful
+### ✅ Test 8: OTP verification successful
+### ✅ Test 9: Wrong OTP fails
+### ✅ Test 10: Registration after OTP works
+### ✅ Test 11: Registration without OTP fails
+### ✅ Test 12: Mismatched passwords fail
+### ✅ Test 13: Forgot password (student) works
+### ✅ Test 14: Forgot password (teacher) works
+### ✅ Test 15: Forgot password for non-existent user fails
+### ✅ Test 16: Reset password with valid token works
+### ✅ Test 17: Reset password with wrong token fails
+### ✅ Test 18: Reset password with mismatched passwords fails
+### ✅ Test 19: Logout with token works
+### ✅ Test 20: Logout without token fails
+
+### ============================================
+### NOTES
+### ============================================
+### 1. OTP expires in 5 minutes (configurable in .env)
+### 2. Reset token expires in 15 minutes (configurable in .env)
+### 3. Max OTP attempts: 3
+### 4. Max reset token attempts: 3
+### 5. JWT token expires in 1 hour (7 days with rememberMe)
+### 6. All OTPs and reset tokens are logged to backend console
+### 7. Tokens are blacklisted on logout

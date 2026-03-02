@@ -1,0 +1,31 @@
+### Test Registration for gm7605
+
+### 1. Login first
+POST http://localhost:5000/auth/login
+Content-Type: application/json
+
+{
+  "email": "gm7605@myamu.ac.in",
+  "password": "azx"
+}
+
+### Copy the token from above response
+@token = YOUR_TOKEN_HERE
+
+### 2. Register for a course
+POST http://localhost:5000/api/courses/register
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "courses": [
+    {
+      "courseCode": "ELA2331",
+      "registrationType": "regular"
+    }
+  ]
+}
+
+### 3. Check dashboard
+GET http://localhost:5000/api/student/dashboard
+Authorization: Bearer {{token}}
