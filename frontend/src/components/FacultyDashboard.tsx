@@ -3,7 +3,6 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { CSVUploadV2 } from '@/components/CSVUploadV2';
-import { JobDashboard } from '@/components/JobDashboard';
 import AddCourseDialog from '@/components/AddCourseDialog';
 import CourseFiltersComponent, { CourseFilters } from '@/components/CourseFilters';
 import RegistrationControlPanel from '@/components/RegistrationControlPanel';
@@ -401,7 +400,6 @@ const FacultyDashboard = () => {
     ...(isAdmin ? [
       { id: 'approvals', label: 'Approvals', icon: ClipboardList },
       { id: 'upload', label: 'Upload CSV', icon: Upload },
-      { id: 'jobs', label: 'Background Jobs', icon: TrendingUp },
       { id: 'registration-control', label: 'Registration Control', icon: Sliders },
     ] : []),
     { id: 'reports', label: 'Reports', icon: BarChart3 },
@@ -559,9 +557,6 @@ const FacultyDashboard = () => {
               )}
               {isAdmin && (
                 <TabsTrigger value="upload" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Upload CSV</TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="jobs" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Background Jobs</TabsTrigger>
               )}
               {isAdmin && (
                 <TabsTrigger value="registration-control" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Registration Control</TabsTrigger>
@@ -1437,13 +1432,6 @@ const FacultyDashboard = () => {
         {isAdmin && (
           <TabsContent value="upload" className="mt-4 sm:mt-6">
             <CSVUploadV2 />
-          </TabsContent>
-        )}
-
-        {/* Background Jobs Tab (Admin Only) */}
-        {isAdmin && (
-          <TabsContent value="jobs" className="mt-4 sm:mt-6">
-            <JobDashboard />
           </TabsContent>
         )}
 
