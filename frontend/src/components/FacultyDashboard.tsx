@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { CSVUpload } from '@/components/CSVUpload';
+import { useNavigate } from 'react-router-dom';
+import { CSVUploadV2 } from '@/components/CSVUploadV2';
+import { JobDashboard } from '@/components/JobDashboard';
 import AddCourseDialog from '@/components/AddCourseDialog';
 import CourseFiltersComponent, { CourseFilters } from '@/components/CourseFilters';
 import RegistrationControlPanel from '@/components/RegistrationControlPanel';
@@ -12,6 +15,28 @@ import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Users, 
   BookOpen, 
@@ -36,7 +61,13 @@ import {
   AlertTriangle,
   TrendingUp,
   Unlock,
-  Lock
+  Lock,
+  Menu,
+  Home,
+  Upload,
+  Sliders,
+  LogOut,
+  User
 } from 'lucide-react';
 import {
   getFacultyDashboardData,
@@ -119,16 +150,35 @@ interface Approval {
 const FacultyDashboard = () => {
   const { isRegistrationEnabled, setIsRegistrationEnabled, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddCourseDialogOpen, setIsAddCourseDialogOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [courseFilters, setCourseFilters] = useState<CourseFilters>({
     sortBy: 'course_code',
     sortOrder: 'asc',
   });
   
+  // Student filters and pagination
+  const [studentBranchFilter, setStudentBranchFilter] = useState<string>('all');
+  const [studentSemesterFilter, setStudentSemesterFilter] = useState<string>('all');
+  const [studentCurrentPage, setStudentCurrentPage] = useState(1);
+  const [studentRowsPerPage] = useState(10);
+  
+  // Course pagination
+  const [courseCurrentPage, setCourseCurrentPage] = useState(1);
+  const [courseRowsPerPage] = useState(25);
+  
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
   
   // Data states
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -298,10 +348,71 @@ const FacultyDashboard = () => {
     }
   };
 
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.enrollmentNo.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStudents = students
+    .filter(student => {
+      // Search filter
+      const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.enrollmentNo.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Branch filter
+      const matchesBranch = studentBranchFilter === 'all' || 
+        student.branch.toLowerCase().includes(studentBranchFilter.toLowerCase());
+      
+      // Semester filter
+      const matchesSemester = studentSemesterFilter === 'all' || 
+        student.semester.toString() === studentSemesterFilter;
+      
+      return matchesSearch && matchesBranch && matchesSemester;
+    });
+  
+  // Pagination logic for students
+  const totalStudentPages = Math.ceil(filteredStudents.length / studentRowsPerPage);
+  const paginatedStudents = filteredStudents.slice(
+    (studentCurrentPage - 1) * studentRowsPerPage,
+    studentCurrentPage * studentRowsPerPage
   );
+  
+  // Get unique branches and semesters for filters
+  const uniqueBranches = Array.from(new Set(students.map(s => s.branch))).sort();
+  const uniqueSemesters = Array.from(new Set(students.map(s => s.semester))).sort((a, b) => a - b);
+  
+  // Reset page when filters change
+  useEffect(() => {
+    setStudentCurrentPage(1);
+  }, [studentBranchFilter, studentSemesterFilter, searchTerm]);
+  
+  // Pagination logic for courses
+  const totalCoursePages = Math.ceil(courses.length / courseRowsPerPage);
+  const paginatedCourses = courses.slice(
+    (courseCurrentPage - 1) * courseRowsPerPage,
+    courseCurrentPage * courseRowsPerPage
+  );
+  
+  // Reset course page when courses change
+  useEffect(() => {
+    setCourseCurrentPage(1);
+  }, [courses.length]);
+
+  // Mobile navigation items
+  const navigationItems = [
+    { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'students', label: 'Students', icon: Users },
+    { id: 'courses', label: 'Courses', icon: BookOpen },
+    ...(isAdmin ? [
+      { id: 'approvals', label: 'Approvals', icon: ClipboardList },
+      { id: 'upload', label: 'Upload CSV', icon: Upload },
+      { id: 'jobs', label: 'Background Jobs', icon: TrendingUp },
+      { id: 'registration-control', label: 'Registration Control', icon: Sliders },
+    ] : []),
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    if (isMobile) {
+      setIsMobileSidebarOpen(false);
+    }
+  };
 
   if (isLoading) {
     return <LoadingSpinner fullScreen={false} text="Loading dashboard..." />;
@@ -316,60 +427,157 @@ const FacultyDashboard = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      {/* Welcome Header */}
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 glass-card px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mb-2 sm:mb-4">
-            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-secondary" />
-            <span className="text-foreground">{isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}</span>
+    <div className={`${isMobile ? 'px-1 py-1' : 'px-3 py-3'} space-y-8 sm:space-y-10 animate-fade-in min-h-screen`}>
+      {/* Mobile Navigation Header */}
+      {isMobile && (
+        <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-40 bg-background/95 backdrop-blur-md rounded-xl border border-border/50 mx-auto mb-8" style={{ width: '98%' }}>
+          <div className="flex items-center gap-3">
+            {/* AMU Logo */}
+            <img 
+              src="https://registration.fyup.amucoe.ac.in/assets/logo.png" 
+              alt="AMU Logo" 
+              className="h-9 w-9 object-contain"
+            />
+            <span className="text-xs font-bold text-foreground whitespace-nowrap">
+              {isAdmin ? 'Admin Portal' : 'Faculty Portal'}
+            </span>
           </div>
-          <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-foreground mb-1 sm:mb-2">
-            Welcome, <span className="serif-highlight gradient-text">{dashboardData.teacher.name}</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {isAdmin ? 'Manage courses, rules, and monitor registrations' : 'View students, courses, and reports'}
-          </p>
+          
+          <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-lg h-8 px-3">
+                <Menu className="h-4 w-4 mr-2" />
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="p-4 border-b border-border">
+                <SheetTitle className="text-left">
+                  {isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="p-4 space-y-2">
+                {navigationItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      activeTab === item.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                    {item.id === 'approvals' && dashboardData.statistics.pendingApprovals > 0 && (
+                      <Badge className="ml-auto bg-destructive text-destructive-foreground text-xs">
+                        {dashboardData.statistics.pendingApprovals}
+                      </Badge>
+                    )}
+                  </button>
+                ))}
+                
+                {/* Logout Button in Mobile Sidebar */}
+                <div className="border-t border-border mt-4 pt-4">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-        <div className="flex gap-2 sm:gap-3">
-          <Button variant="outline" size="sm" className="rounded-full text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
-            <Bell className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Alerts</span>
-            <Badge className="ml-1 sm:ml-2 bg-destructive text-destructive-foreground text-[10px] sm:text-xs">{dashboardData.statistics.pendingApprovals}</Badge>
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-full h-8 w-8 sm:h-9 sm:w-9 p-0">
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
-        </div>
-      </div>
+      )}
 
-      {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="glass-card p-0.5 sm:p-1 rounded-xl sm:rounded-2xl w-full overflow-x-auto flex">
-          <TabsTrigger value="overview" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Overview</TabsTrigger>
-          <TabsTrigger value="students" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Students</TabsTrigger>
-          <TabsTrigger value="courses" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Courses</TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="approvals" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Approvals</TabsTrigger>
+      {/* Main Content Container - Completely Separated */}
+      <div className={`${isMobile ? 'px-2' : 'px-4'} transition-all duration-300`} style={{ maxWidth: isMobile ? '100%' : '95%', margin: '0 auto' }}>
+        {/* Welcome Header */}
+        <div className="flex flex-col gap-2 sm:gap-4 mb-8 sm:mb-10">
+          <div>
+            {!isMobile && (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  {/* AMU Logo for Desktop */}
+                  <img 
+                    src="https://registration.fyup.amucoe.ac.in/assets/logo.png" 
+                    alt="AMU Logo" 
+                    className="h-16 w-16 object-contain"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xl font-bold text-foreground leading-tight">
+                      Aligarh Muslim University
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {isAdmin ? 'Admin Dashboard' : 'Faculty Dashboard'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Desktop Logout Button */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="rounded-full h-9 w-9 p-0">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+            <h1 className="text-lg sm:text-3xl md:text-4xl font-bold text-foreground mb-1 sm:mb-2">
+              Welcome, <span className="serif-highlight gradient-text">{dashboardData.teacher.name}</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {isAdmin ? 'Manage courses, rules, and monitor registrations' : 'View students, courses, and reports'}
+            </p>
+          </div>
+        </div>
+
+        {/* Tabs Navigation - Desktop Only */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {!isMobile && (
+            <TabsList className="glass-card p-0.5 sm:p-1 rounded-xl sm:rounded-2xl w-full overflow-x-auto flex">
+              <TabsTrigger value="overview" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Overview</TabsTrigger>
+              <TabsTrigger value="students" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Students</TabsTrigger>
+              <TabsTrigger value="courses" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Courses</TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="approvals" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Approvals</TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="upload" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Upload CSV</TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="jobs" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Background Jobs</TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="registration-control" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Registration Control</TabsTrigger>
+              )}
+              <TabsTrigger value="reports" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-none">Reports</TabsTrigger>
+            </TabsList>
           )}
-          {isAdmin && (
-            <TabsTrigger value="upload" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Upload CSV</TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="registration-control" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Registration Control</TabsTrigger>
-          )}
-          <TabsTrigger value="reports" className="rounded-lg sm:rounded-xl px-2 sm:px-4 text-[10px] sm:text-sm flex-1 sm:flex-none">Reports</TabsTrigger>
-        </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
             {[
               { label: 'Total Students', value: String(dashboardData.statistics.totalStudents), icon: <Users className="h-4 w-4 sm:h-5 sm:w-5" />, change: `${dashboardData.statistics.activeStudents} active` },
               { label: 'Active Courses', value: String(dashboardData.statistics.totalCourses), icon: <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />, change: '' },
-              { label: 'Pending', value: String(dashboardData.statistics.pendingApprovals), icon: <Clock className="h-4 w-4 sm:h-5 sm:w-5" />, change: dashboardData.statistics.pendingApprovals > 0 ? 'Urgent' : '' },
-              { label: 'Department', value: dashboardData.teacher.department, icon: <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />, change: '' },
+              { label: 'Pending Approvals', value: String(dashboardData.statistics.pendingApprovals), icon: <Clock className="h-4 w-4 sm:h-5 sm:w-5" />, change: dashboardData.statistics.pendingApprovals > 0 ? 'Urgent' : '' },
             ].map((stat, index) => (
               <div key={index} className="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5">
                 <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -392,98 +600,70 @@ const FacultyDashboard = () => {
 
           {/* Registration Control & Quick Actions */}
           <div className="grid gap-3 sm:gap-6 lg:grid-cols-2">
-            {/* Registration Control */}
-            <div className={`glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 ${isRegistrationEnabled ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {isRegistrationEnabled ? (
-                    <Unlock className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  ) : (
-                    <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
-                  )}
-                  <h3 className="font-bold text-sm sm:text-lg text-foreground">Registration</h3>
+            {/* Registration Control - Compact Design */}
+            <div className="glass-card rounded-xl p-4 border border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-white" />
                 </div>
-                <Switch 
-                  checked={isRegistrationEnabled} 
-                  onCheckedChange={setIsRegistrationEnabled}
-                />
+                <h3 className="font-bold text-base text-foreground">Registration Control</h3>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                {isRegistrationEnabled 
-                  ? 'Students can register for courses.' 
-                  : 'Registration closed for students.'
-                }
+              <p className="text-sm text-muted-foreground mb-4">
+                Manage registration phases and deadlines through the Registration Control Panel.
               </p>
-              <Badge className={`text-[10px] sm:text-xs ${isRegistrationEnabled ? 'bg-primary/10 text-primary border-0' : 'bg-muted text-muted-foreground border-0'}`}>
-                {isRegistrationEnabled ? 'Open' : 'Closed'}
-              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-lg text-sm h-8 px-4"
+                onClick={() => setActiveTab('registration-control')}
+              >
+                Open Control Panel
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
 
-            {/* Quick Actions */}
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-              <h3 className="font-bold text-sm sm:text-lg text-foreground mb-3 sm:mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            {/* Quick Actions - Fixed Square Buttons */}
+            <div className="glass-card rounded-xl p-4">
+              <h3 className="font-bold text-base text-foreground mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: 'Add Course', icon: <Plus className="h-4 w-4 sm:h-5 sm:w-5" />, color: 'primary', action: () => setIsAddCourseDialogOpen(true) },
-                  { label: 'Reports', icon: <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />, color: 'secondary', action: () => setActiveTab('reports') },
-                  { label: 'Rules', icon: <FileText className="h-4 w-4 sm:h-5 sm:w-5" />, color: 'primary', action: () => {} },
-                  { label: 'Export', icon: <Download className="h-4 w-4 sm:h-5 sm:w-5" />, color: 'secondary', action: () => {} },
+                  { label: 'Add Course', icon: <Plus className="h-6 w-6" />, action: () => setIsAddCourseDialogOpen(true) },
+                  { label: 'Reports', icon: <BarChart3 className="h-6 w-6" />, action: () => setActiveTab('reports') },
+                  { label: 'Students', icon: <Users className="h-6 w-6" />, action: () => setActiveTab('students') },
+                  { label: 'Export', icon: <Download className="h-6 w-6" />, action: () => {} },
                 ].map((action, index) => (
                   <Button 
                     key={index}
                     variant="outline" 
-                    className="h-auto py-3 sm:py-4 flex-col gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl hover:bg-primary/5"
+                    className="h-24 w-full flex-col gap-2 rounded-xl hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 transition-all duration-200"
                     onClick={action.action}
                   >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-white shadow-lg">
                       {action.icon}
                     </div>
-                    <span className="text-[10px] sm:text-sm font-medium">{action.label}</span>
+                    <span className="text-sm font-bold text-gray-900">{action.label}</span>
                   </Button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-6">
-              <h3 className="font-bold text-sm sm:text-lg text-foreground">Recent Activity</h3>
-              <Button variant="ghost" size="sm" onClick={() => setActiveTab('reports')} className="text-xs sm:text-sm h-7 sm:h-8 px-2 sm:px-3">
-                View All
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              {dashboardData.recentActivity.slice(0, 4).map((log) => (
-                <div key={log.id} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary mt-1.5 sm:mt-2 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-foreground truncate">{log.action}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                      {log.student} • {log.course}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Pending Approvals Alert */}
           {isAdmin && dashboardData.statistics.pendingApprovals > 0 && (
-            <div className="glass-card rounded-2xl sm:rounded-3xl p-3 sm:p-6 border-2 border-secondary/30 bg-secondary/5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-secondary/20 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
+            <div className="glass-card rounded-xl p-4 border border-secondary/20 bg-secondary/5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-foreground">{dashboardData.statistics.pendingApprovals} Pending</h3>
-                    <p className="text-[10px] sm:text-sm text-muted-foreground">Waiting for approval</p>
+                    <h3 className="font-bold text-sm text-foreground">{dashboardData.statistics.pendingApprovals} Pending Approvals</h3>
+                    <p className="text-xs text-muted-foreground">Waiting for review</p>
                   </div>
                 </div>
-                <Button className="rounded-full text-xs sm:text-sm h-8 sm:h-9 w-full sm:w-auto" onClick={() => setActiveTab('approvals')}>
+                <Button className="rounded-lg text-xs h-7" onClick={() => setActiveTab('approvals')}>
                   Review
-                  <ArrowRight className="ml-1.5 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -505,10 +685,41 @@ const FacultyDashboard = () => {
                     className="pl-8 sm:pl-9 h-8 sm:h-10 rounded-lg sm:rounded-xl text-xs sm:text-sm"
                   />
                 </div>
-                <Button variant="outline" className="rounded-lg sm:rounded-xl h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm" onClick={fetchStudents}>
+                <Button variant="outline" className={`rounded-lg sm:rounded-xl h-7 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm`} onClick={fetchStudents}>
                   <Filter className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Refresh</span>
                 </Button>
+              </div>
+            </div>
+            
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+              <div className="flex-1">
+                <select
+                  value={studentBranchFilter}
+                  onChange={(e) => setStudentBranchFilter(e.target.value)}
+                  className="w-full h-8 sm:h-10 px-3 rounded-lg sm:rounded-xl border border-input bg-background text-xs sm:text-sm"
+                >
+                  <option value="all">All Branches</option>
+                  {uniqueBranches.map(branch => (
+                    <option key={branch} value={branch}>{branch}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <select
+                  value={studentSemesterFilter}
+                  onChange={(e) => setStudentSemesterFilter(e.target.value)}
+                  className="w-full h-8 sm:h-10 px-3 rounded-lg sm:rounded-xl border border-input bg-background text-xs sm:text-sm"
+                >
+                  <option value="all">All Semesters</option>
+                  {uniqueSemesters.map(sem => (
+                    <option key={sem} value={sem}>Semester {sem}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground flex items-center px-2">
+                Showing {paginatedStudents.length} of {filteredStudents.length} students
               </div>
             </div>
             
@@ -518,7 +729,7 @@ const FacultyDashboard = () => {
               <>
                 {/* Mobile Card View */}
                 <div className="sm:hidden space-y-2">
-                  {filteredStudents.map((student) => (
+                  {paginatedStudents.map((student) => (
                     <div key={student.enrollmentNo} className="p-3 rounded-xl bg-muted/30">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono text-xs font-bold text-primary">{student.enrollmentNo}</span>
@@ -537,7 +748,7 @@ const FacultyDashboard = () => {
                           <span>Sem: {student.semester}</span>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Button variant="ghost" size="sm" className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7'} p-0`}>
                             <Eye className="h-3 w-3" />
                           </Button>
                         </div>
@@ -561,7 +772,7 @@ const FacultyDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStudents.map((student) => (
+                      {paginatedStudents.map((student) => (
                         <tr key={student.enrollmentNo} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                           <td className="py-3 px-4 font-mono text-sm font-medium text-primary">{student.enrollmentNo}</td>
                           <td className="py-3 px-4 text-sm text-foreground">{student.name}</td>
@@ -592,6 +803,58 @@ const FacultyDashboard = () => {
                     </tbody>
                   </table>
                 </div>
+                
+                {/* Pagination Controls */}
+                {filteredStudents.length > studentRowsPerPage && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-border">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Page {studentCurrentPage} of {totalStudentPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStudentCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={studentCurrentPage === 1}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Previous
+                      </Button>
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalStudentPages }, (_, i) => i + 1)
+                          .filter(page => {
+                            return page === 1 || 
+                                   page === totalStudentPages || 
+                                   Math.abs(page - studentCurrentPage) <= 1;
+                          })
+                          .map((page, idx, arr) => (
+                            <React.Fragment key={page}>
+                              {idx > 0 && arr[idx - 1] !== page - 1 && (
+                                <span className="px-2 flex items-center text-muted-foreground">...</span>
+                              )}
+                              <Button
+                                variant={studentCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setStudentCurrentPage(page)}
+                                className="h-8 w-8 p-0 text-xs"
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStudentCurrentPage(p => Math.min(totalStudentPages, p + 1))}
+                        disabled={studentCurrentPage >= totalStudentPages}
+                        className="h-8 px-3 text-xs"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -604,7 +867,7 @@ const FacultyDashboard = () => {
               <h2 className="text-base sm:text-xl font-bold text-foreground">Course Management</h2>
               {isAdmin && (
                 <Button 
-                  className="rounded-lg sm:rounded-xl text-xs sm:text-sm h-8 sm:h-10"
+                  className={`rounded-lg sm:rounded-xl text-xs sm:text-sm ${isMobile ? 'h-7' : 'h-8 sm:h-10'}`}
                   onClick={() => setIsAddCourseDialogOpen(true)}
                 >
                   <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
@@ -647,7 +910,7 @@ const FacultyDashboard = () => {
               />
               <Button 
                 variant="outline" 
-                className="rounded-lg sm:rounded-xl h-8 sm:h-10 px-2 sm:px-3 text-xs sm:text-sm" 
+                className={`rounded-lg sm:rounded-xl ${isMobile ? 'h-7' : 'h-8 sm:h-10'} px-2 sm:px-3 text-xs sm:text-sm`}
                 onClick={fetchCourses}
               >
                 <Filter className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
@@ -820,8 +1083,9 @@ const FacultyDashboard = () => {
             {isLoadingCourses ? (
               <LoadingSpinner fullScreen={false} text="Loading courses..." />
             ) : (
-              <div className="space-y-2 sm:space-y-4">
-                {courses.map((course) => (
+              <>
+                <div className="space-y-2 sm:space-y-4">
+                  {paginatedCourses.map((course) => (
                   <div key={course.courseCode} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
@@ -841,15 +1105,15 @@ const FacultyDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 sm:gap-2">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
+                      <Button variant="ghost" size="sm" className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8 sm:h-9 sm:w-9'} p-0`}>
                         <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       {isAdmin && (
                         <>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
+                          <Button variant="ghost" size="sm" className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8 sm:h-9 sm:w-9'} p-0`}>
                             <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0 text-destructive hover:text-destructive">
+                          <Button variant="ghost" size="sm" className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8 sm:h-9 sm:w-9'} p-0 text-destructive hover:text-destructive`}>
                             <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </>
@@ -858,6 +1122,59 @@ const FacultyDashboard = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* Course Pagination Controls */}
+              {courses.length > courseRowsPerPage && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-border">
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Showing {((courseCurrentPage - 1) * courseRowsPerPage) + 1} to {Math.min(courseCurrentPage * courseRowsPerPage, courses.length)} of {courses.length} courses
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCourseCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={courseCurrentPage === 1}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex gap-1">
+                      {Array.from({ length: totalCoursePages }, (_, i) => i + 1)
+                        .filter(page => {
+                          return page === 1 || 
+                                 page === totalCoursePages || 
+                                 Math.abs(page - courseCurrentPage) <= 1;
+                        })
+                        .map((page, idx, arr) => (
+                          <React.Fragment key={page}>
+                            {idx > 0 && arr[idx - 1] !== page - 1 && (
+                              <span className="px-2 flex items-center text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant={courseCurrentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCourseCurrentPage(page)}
+                              className="h-8 w-8 p-0 text-xs"
+                            >
+                              {page}
+                            </Button>
+                          </React.Fragment>
+                        ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCourseCurrentPage(p => Math.min(totalCoursePages, p + 1))}
+                      disabled={courseCurrentPage >= totalCoursePages}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
             )}
           </div>
         </TabsContent>
@@ -892,7 +1209,7 @@ const FacultyDashboard = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button 
-                        className="rounded-lg sm:rounded-xl flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9" 
+                        className={`rounded-lg sm:rounded-xl flex-1 sm:flex-none text-xs sm:text-sm ${isMobile ? 'h-7' : 'h-8 sm:h-9'}`}
                         size="sm"
                         onClick={() => handleApprove(approval.id)}
                       >
@@ -901,7 +1218,7 @@ const FacultyDashboard = () => {
                       </Button>
                       <Button 
                         variant="outline" 
-                        className="rounded-lg sm:rounded-xl flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9" 
+                        className={`rounded-lg sm:rounded-xl flex-1 sm:flex-none text-xs sm:text-sm ${isMobile ? 'h-7' : 'h-8 sm:h-9'}`}
                         size="sm"
                         onClick={() => handleReject(approval.id)}
                       >
@@ -922,117 +1239,192 @@ const FacultyDashboard = () => {
             <LoadingSpinner fullScreen={false} text="Loading statistics..." />
           ) : (
             <>
-              <div className="grid gap-3 sm:gap-6 md:grid-cols-2">
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground">
-                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                    <h3 className="font-bold text-sm sm:text-lg text-foreground">Registration Stats</h3>
+              {/* Branch Filter */}
+              <div className="glass-card rounded-xl p-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <h2 className="text-lg font-bold text-foreground">Registration Analytics</h2>
+                  <div className="flex gap-3">
+                    <Select defaultValue="all">
+                      <SelectTrigger className="w-48 rounded-lg">
+                        <SelectValue placeholder="Filter by Branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Branches</SelectItem>
+                        <SelectItem value="CSE">Computer Science</SelectItem>
+                        <SelectItem value="ECE">Electronics & Communication</SelectItem>
+                        <SelectItem value="ME">Mechanical Engineering</SelectItem>
+                        <SelectItem value="CE">Civil Engineering</SelectItem>
+                        <SelectItem value="EE">Electrical Engineering</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" className="rounded-lg">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Apply Filter
+                    </Button>
                   </div>
-                  <div className="space-y-3 sm:space-y-4">
+                </div>
+              </div>
+
+              {/* Key Metrics Overview */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="glass-card rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="font-bold text-base text-foreground">Registration Overview</h3>
+                  </div>
+                  <div className="space-y-4">
                     {[
-                      { label: 'Total', value: stats.overview.total, max: stats.overview.total || 1 },
-                      { label: 'Approved', value: stats.overview.approved, max: stats.overview.total || 1 },
-                      { label: 'Pending', value: stats.overview.pending, max: stats.overview.total || 1 },
-                      { label: 'Rejected', value: stats.overview.rejected, max: stats.overview.total || 1 },
+                      { label: 'Total Registrations', value: stats.overview.total, color: 'bg-gray-500' },
+                      { label: 'Approved', value: stats.overview.approved, color: 'bg-gray-600' },
+                      { label: 'Pending Review', value: stats.overview.pending, color: 'bg-gray-400' },
+                      { label: 'Rejected', value: stats.overview.rejected, color: 'bg-gray-300' },
                     ].map((stat, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between text-xs sm:text-sm mb-1">
-                          <span className="text-muted-foreground">{stat.label}</span>
-                          <span className="font-medium text-foreground">{stat.value}</span>
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded ${stat.color}`} />
+                          <span className="text-sm text-muted-foreground">{stat.label}</span>
                         </div>
-                        <div className="h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${stat.max > 0 ? (stat.value / stat.max) * 100 : 0}%` }}
-                          />
-                        </div>
+                        <span className="font-bold text-base text-foreground">{stat.value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                  <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center text-primary-foreground">
-                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className="glass-card rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="font-bold text-sm sm:text-lg text-foreground">Top Courses</h3>
+                    <h3 className="font-bold text-base text-foreground">Popular Courses</h3>
                   </div>
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-3">
                     {stats.topCourses && stats.topCourses.length > 0 ? (
                       stats.topCourses.slice(0, 5).map((course: any, index: number) => (
-                        <div key={course.courseCode} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted/30">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-xs sm:text-sm">
+                        <div key={course.courseCode} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                          <div className="w-6 h-6 rounded bg-gray-500 flex items-center justify-center text-white font-bold text-sm">
                             {index + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-medium text-foreground truncate">{course.courseCode}</p>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{course.courseName}</p>
+                            <p className="text-sm font-medium text-foreground truncate">{course.courseCode}</p>
                           </div>
-                          <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                          <Badge variant="secondary" className="text-sm">
                             {course.registrations}
                           </Badge>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
-                        No course registrations yet
+                      <div className="text-center py-6 text-sm text-muted-foreground">
+                        No registrations yet
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
 
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary flex items-center justify-center text-primary-foreground">
-                    <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </div>
-                  <h3 className="font-bold text-sm sm:text-lg text-foreground">Recent Activity</h3>
-                </div>
-                <div className="space-y-2 sm:space-y-3">
-                  {dashboardData.recentActivity && dashboardData.recentActivity.length > 0 ? (
-                    dashboardData.recentActivity.map((log) => (
-                      <div key={log.id} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl hover:bg-muted/30 transition-colors">
-                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary mt-1.5 sm:mt-2" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm text-foreground truncate">{log.action}</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                            {log.student} • {log.course} • {new Date(log.time).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-4 text-xs sm:text-sm text-muted-foreground">
-                      No recent activity
+                <div className="glass-card rounded-xl p-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-lg bg-gray-600 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-white" />
                     </div>
-                  )}
+                    <h3 className="font-bold text-base text-foreground">Student Analytics</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Active Students</span>
+                      <span className="font-bold text-base text-foreground">{dashboardData.statistics.activeStudents}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Total Students</span>
+                      <span className="font-bold text-base text-foreground">{dashboardData.statistics.totalStudents}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Participation Rate</span>
+                      <span className="font-bold text-base text-foreground">
+                        {dashboardData.statistics.totalStudents > 0 
+                          ? Math.round((dashboardData.statistics.activeStudents / dashboardData.statistics.totalStudents) * 100)
+                          : 0}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <h3 className="font-bold text-sm sm:text-lg text-foreground">Export Reports</h3>
+              {/* Registration Analysis */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="glass-card rounded-xl p-5">
+                  <h3 className="font-bold text-base text-foreground mb-5">Registration Status Distribution</h3>
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Approved', value: stats.overview.approved, total: stats.overview.total, color: 'bg-gray-600' },
+                      { label: 'Pending', value: stats.overview.pending, total: stats.overview.total, color: 'bg-gray-400' },
+                      { label: 'Rejected', value: stats.overview.rejected, total: stats.overview.total, color: 'bg-gray-300' },
+                    ].map((stat, index) => {
+                      const percentage = stat.total > 0 ? (stat.value / stat.total) * 100 : 0;
+                      return (
+                        <div key={index}>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">{stat.label}</span>
+                            <span className="font-medium text-foreground">{stat.value} ({percentage.toFixed(1)}%)</span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${stat.color} rounded-full transition-all duration-300`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+
+                <div className="glass-card rounded-xl p-5">
+                  <h3 className="font-bold text-base text-foreground mb-5">Branch-wise Distribution</h3>
+                  <div className="space-y-3">
+                    {[
+                      { branch: 'Computer Science', count: 45, code: 'CSE' },
+                      { branch: 'Electronics & Communication', count: 38, code: 'ECE' },
+                      { branch: 'Mechanical Engineering', count: 32, code: 'ME' },
+                      { branch: 'Civil Engineering', count: 28, code: 'CE' },
+                      { branch: 'Electrical Engineering', count: 25, code: 'EE' },
+                    ].map((branch, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-foreground">{branch.code}</span>
+                          <span className="text-sm text-muted-foreground">{branch.branch}</span>
+                        </div>
+                        <Badge variant="outline" className="text-sm">{branch.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Export and Actions */}
+              <div className="glass-card rounded-xl p-5">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-bold text-base text-foreground">Export Reports</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    { label: 'Student Report', desc: 'All student records' },
-                    { label: 'Registration', desc: 'Semester data' },
-                    { label: 'Audit Report', desc: 'Activity logs' },
+                    { label: 'Registration Report', desc: 'All registrations', icon: <FileText className="h-5 w-5" /> },
+                    { label: 'Student Report', desc: 'Student records', icon: <Users className="h-5 w-5" /> },
+                    { label: 'Course Analytics', desc: 'Course statistics', icon: <BarChart3 className="h-5 w-5" /> },
+                    { label: 'Approval Log', desc: 'Approval history', icon: <CheckCircle className="h-5 w-5" /> },
                   ].map((report, index) => (
                     <Button 
                       key={index}
                       variant="outline" 
-                      className="h-auto py-3 sm:py-4 flex-col items-start gap-0.5 sm:gap-1 rounded-xl sm:rounded-2xl"
+                      className="h-20 flex-col items-center gap-2 rounded-lg hover:bg-primary/5"
                     >
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="font-medium text-xs sm:text-sm">{report.label}</span>
+                      <div className="w-8 h-8 rounded-lg bg-gray-500 flex items-center justify-center text-white">
+                        {report.icon}
                       </div>
-                      <span className="text-[10px] sm:text-xs text-muted-foreground">{report.desc}</span>
+                      <div className="text-center">
+                        <div className="font-medium text-sm">{report.label}</div>
+                        <div className="text-sm text-muted-foreground">{report.desc}</div>
+                      </div>
                     </Button>
                   ))}
                 </div>
@@ -1044,7 +1436,14 @@ const FacultyDashboard = () => {
         {/* CSV Upload Tab (Admin Only) */}
         {isAdmin && (
           <TabsContent value="upload" className="mt-4 sm:mt-6">
-            <CSVUpload />
+            <CSVUploadV2 />
+          </TabsContent>
+        )}
+
+        {/* Background Jobs Tab (Admin Only) */}
+        {isAdmin && (
+          <TabsContent value="jobs" className="mt-4 sm:mt-6">
+            <JobDashboard />
           </TabsContent>
         )}
 
@@ -1064,6 +1463,7 @@ const FacultyDashboard = () => {
           onSuccess={fetchCourses}
         />
       )}
+      </div>
     </div>
   );
 };

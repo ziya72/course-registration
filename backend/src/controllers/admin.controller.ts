@@ -17,6 +17,7 @@ export class AdminController {
         semesterNo,
         branchCode,
         isElective,
+        isAdvanced,
         electiveGroup,
         courseType,
       } = req.body;
@@ -45,6 +46,7 @@ export class AdminController {
           semester_no: parseInt(semesterNo),
           branch_code: branchCode,
           is_elective: isElective || false,
+          is_advanced: isAdvanced || false,
           elective_group: electiveGroup || null,
           course_type: courseType || "Theory",
         },
@@ -56,6 +58,7 @@ export class AdminController {
           courseCode: course.course_code,
           courseName: course.course_name,
           credits: course.credits,
+          isAdvanced: course.is_advanced,
         },
       });
     } catch (error) {

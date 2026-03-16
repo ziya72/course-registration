@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Upload Performance Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+        .performance { font-family: monospace; background: #f8f9fa; padding: 15px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 CSV Upload Performance Test</h1>
+    
+    <div class="test-section">
+        <h2>📁 File Upload</h2>
+        <input type="file" id="csvFile" accept=".csv" />
+        <select id="uploadType">
+            <option value="students">Students</option>
+            <option value="courses">Courses</option>
+            <option value="results">Results</option>
+        </select>
+        <br><br>
+        <button onclick="testSequential()">🐌 Test Sequential Upload</button>
+        <button onclick="testOptimized()">⚡ Test Optimized Upload</button>
+        <button onclick="comparePerformance()">📊 Compare Both</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/admin/upload';
+        const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVySWQiOjEsInJvbGUiOiJhZG1pbiIsImVtYWlsIjoiMWMyZDc4NDU0Y2JmYzY3YTU4MmM2ZDllYWYwNDA4OTk1NmY0YzFhNGYyMDIwNGE4YWM5NjU1MDkyYTU0ZjZmNCIsImlkIjoiMWI1MTViMGI2YTllZjkwYmY5ZjE3NDBiZDZiODM4ZDUiLCJpYXQiOjE3NzM1OTY4NTksImV4cCI6MTc3MzYwMDQ1OX0.MhADHgQo3_6tMQCTVs18mBoxu6kyg_9RDqW43xWRTPY'; // Replace with actual token
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function uploadFile(endpoint, label) {
+            const fileInput = document.getElementById('csvFile');
+            const uploadType = document.getElementById('uploadType').value;
+            
+            if (!fileInput.files[0]) {
+                addResult('❌ Please select a CSV file', 'error');
+                return null;
+            }
+
+            const formData = new FormData();
+            formData.append('csvFile', fileInput.files[0]);
+            formData.append('uploadType', uploadType);
+
+            addResult(`🔄 Starting ${label}...`, 'info');
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    }
+                });
+
+                const result = await response.json();
+                const duration = Date.now() - startTime;
+
+                if (response.ok) {
+                    const recordsProcessed = (result.inserted?.created || 0) + (result.inserted?.updated || 0);
+                    const speed = Math.round(recordsProcessed / (duration / 1000));
+                    
+                    addResult(`
+                        <strong>✅ ${label} Completed</strong><br>
+                        ⏱️ Time: ${duration}ms (${(duration/1000).toFixed(2)}s)<br>
+                        📈 Speed: ${speed} records/second<br>
+                        ✨ Created: ${result.inserted?.created || 0}<br>
+                        🔄 Updated: ${result.inserted?.updated || 0}<br>
+                        ❌ Failed: ${result.inserted?.failed || 0}
+                    `, 'success');
+                    
+                    return { duration, recordsProcessed, result };
+                } else {
+                    addResult(`❌ ${label} Failed: ${result.error}`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                addResult(`❌ ${label} Error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testSequential() {
+            document.getElementById('results').innerHTML = '';
+            await uploadFile('/v2', 'Sequential Upload');
+        }
+
+        async function testOptimized() {
+            document.getElementById('results').innerHTML = '';
+            await uploadFile('/optimized', 'Optimized Upload');
+        }
+
+        async function comparePerformance() {
+            document.getElementById('results').innerHTML = '';
+            
+            addResult('🚀 Starting Performance Comparison...', 'info');
+            
+            const sequential = await uploadFile('/v2', 'Sequential Upload');
+            if (!sequential) return;
+            
+            // Wait a moment between tests
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const optimized = await uploadFile('/optimized', 'Optimized Upload');
+            if (!optimized) return;
+            
+            // Show comparison
+            const speedup = sequential.duration / optimized.duration;
+            const improvement = ((1 - optimized.duration/sequential.duration) * 100).toFixed(1);
+            
+            addResult(`
+                <div class="performance">
+                <strong>📊 Performance Comparison</strong><br>
+                🐌 Sequential: ${sequential.duration}ms<br>
+                ⚡ Optimized:  ${optimized.duration}ms<br>
+                🚀 Speedup:    ${speedup.toFixed(1)}x faster<br>
+                💾 Improvement: ${improvement}% faster
+                </div>
+            `, 'success');
+        }
+
+        // Load test file info on page load
+        window.onload = function() {
+            addResult(`
+                <strong>📋 Test Instructions:</strong><br>
+                1. Use the generated test-students-500.csv file (500 records)<br>
+                2. Update AUTH_TOKEN in this HTML file<br>
+                3. Make sure backend server is running on localhost:5000<br>
+                4. Select file and click test buttons to compare performance
+            `, 'info');
+        };
+    </script>
+</body>
+</html>

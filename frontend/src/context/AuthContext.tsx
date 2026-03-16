@@ -4,7 +4,8 @@ import { loginUser as apiLoginUser, logoutUser as apiLogoutUser, getErrorMessage
 export type UserRole = 'student' | 'teacher' | 'admin';
 
 export interface User {
-  id?: string;
+  enrollmentNo?: string;
+  facultyNo?: string;
   name: string;
   role: UserRole;
   email: string;
@@ -86,17 +87,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAuthError(null);
 
     try {
-      const response = await apiLoginUser({ email, password });
+      const response = await apiLoginUser({ email, password, role });
+      
+      // Debug: Log the actual response structure
+      console.log('🔍 Backend response:', response);
+      console.log('🔍 Response user:', response.user);
+      
+      // Comprehensive response validation
+      if (!response) {
+        throw new Error('No response received from server. Please check your internet connection.');
+      }
+      
+      if (typeof response !== 'object') {
+        throw new Error('Invalid response format from server.');
+      }
+      
+      if (!response.token) {
+        throw new Error('Authentication failed: No token received.');
+      }
+      
+      if (!response.user) {
+        throw new Error('Authentication failed: No user data received.');
+      }
       
       // Store token
       localStorage.setItem(TOKEN_KEY, response.token);
       
-      // Create user object
+      // Create user object combining Mohit's backend mapping with comprehensive fallbacks
+      const userRole = (response.user && response.user.role) ? response.user.role : role;
+      const userId = (response.user && response.user.id) ? response.user.id : '';
+      const userName = (response.user && response.user.name) ? response.user.name : '';
+      const userEmail = (response.user && response.user.email) ? response.user.email : email;
+      
       const userData: User = {
-        id: response.user.id,
-        name: response.user.name,
-        email: response.user.email,
-        role: response.user.role || role,
+        enrollmentNo: userRole === 'student' ? userId : undefined, // Backend sends 'id' for enrollment
+        facultyNo: userRole === 'teacher' || userRole === 'admin' ? userId : undefined,
+        name: userName,
+        email: userEmail,
+        role: userRole,
         isLoggedIn: true,
       };
       
@@ -105,10 +133,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(userData);
       
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      console.log('🔍 Full error object:', error);
+      console.log('🔍 Error response:', (error as any)?.response);
+      console.log('🔍 Error data:', (error as any)?.response?.data);
       const errorMessage = getErrorMessage(error);
+      console.log('🔍 Extracted message:', errorMessage);
       setAuthError(errorMessage);
-      console.error('Login error:', errorMessage);
+      console.error('Login error:', error);
       return false;
     } finally {
       setIsAuthenticating(false);
@@ -117,7 +149,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async (): Promise<void> => {
     try {
-      await apiLogoutUser();
+      const email = user?.email;
+      await apiLogoutUser(email);
     } catch (error) {
       console.warn('Server logout failed:', error);
     } finally {

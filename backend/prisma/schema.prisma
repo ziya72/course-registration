@@ -1,10 +1,48 @@
-generator client {
+ generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum AttemptType {
+  REGULAR
+  BACKLOG
+  IMPROVEMENT
+  GRADUATING
+}
+
+enum RegistrationMode {
+  A
+  B
+  C
+}
+
+enum RegistrationStatus {
+  ACTIVE
+  DROPPED
+  WITHDRAWN
+  COMPLETED
+}
+
+enum ElectiveType {
+  BRANCH
+  OPEN
+}
+
+enum Grade {
+  A_PLUS
+  A
+  B_PLUS
+  B
+  C
+  D
+  E
+  F
+  I
 }
 
 model FacultyNumber {
@@ -18,38 +56,57 @@ model FacultyNumber {
 }
 
 model Student {
-  enrollment_no    String               @id
-  faculty_no       String               @unique
-  name             String
-  email            String               @unique
-  password_hash    String
-  current_semester Int                  @default(1)
-  current_cpi      Decimal              @default(0.00)
-  hall             String?
-  is_active        Boolean              @default(false)
-  created_at       DateTime             @default(now())
-  updated_at       DateTime             @updatedAt
-  registrations    CourseRegistration[]
-  grades           GradeRecord[]
-  results          SemesterResult[]
-  faculty          FacultyNumber        @relation(fields: [faculty_no], references: [faculty_no])
+  enrollment_no              String               @id
+  faculty_no                 String               @unique
+  name                       String
+  email                      String               @unique
+  password_hash              String
+  current_semester           Int                  @default(1)
+  current_spi                Decimal              @default(0.000) @db.Decimal(6, 3)
+  current_cpi                Decimal              @default(0.000) @db.Decimal(6, 3)
+  hall                       String?
+  remark                     String?
+  is_active                  Boolean              @default(false)
+  total_earned_credits       Decimal              @default(0.0) @db.Decimal(4, 1)
+  required_credits_for_degree Int                 @default(160)
+  last_registration_year     Int?
+  last_registration_semester Int?
+  password_reset_token       String?              @unique
+  password_reset_expiry      DateTime?
+  password_reset_otp         String?
+  password_reset_otp_expiry  DateTime?
+  password_reset_otp_attempts Int                 @default(0)
+  created_at                 DateTime             @default(now())
+  updated_at                 DateTime             @updatedAt
+  registrations              CourseRegistration[]
+  grades                     GradeRecord[]
+  results                    SemesterResult[]
+  attempts                   CourseAttempt[]
+  alerts                     RegistrationAlert[]
+  faculty                    FacultyNumber        @relation(fields: [faculty_no], references: [faculty_no])
 }
 
 model Course {
   course_code    String               @id
   course_name    String
-  credits        Int
+  credits        Decimal              @db.Decimal(3, 1)
   semester_no    Int
   branch_code    String
   is_elective    Boolean              @default(false)
+  is_advanced    Boolean              @default(false) // Special courses with grade requirements
+  elective_type  ElectiveType?        // BRANCH or OPEN (null for core courses)
   elective_group String?
   course_type    String               @default("Theory")
+  max_seats      Int?
+  is_running     Boolean              @default(true)
   created_at     DateTime             @default(now())
   prerequisites  CoursePrerequisite[] @relation("CoursePrereq")
   requiredBy     CoursePrerequisite[] @relation("PrereqFor")
   registrations  CourseRegistration[]
   schedules      CourseSchedule[]
   grades         GradeRecord[]
+  attempts       CourseAttempt[]
+  advanced_requirements AdvancedCourseRequirement[]
 }
 
 model CoursePrerequisite {
@@ -79,57 +136,62 @@ model Teacher {
   role          String     @default("teacher")
   department    String?
   is_active     Boolean    @default(true)
+  password_reset_token String?    @unique
+  password_reset_expiry  DateTime?
+  password_reset_otp         String?
+  password_reset_otp_expiry  DateTime?
+  password_reset_otp_attempts Int    @default(0)
   created_at    DateTime   @default(now())
   auditLogs     AuditLog[]
 }
 
 model GradeRecord {
-  grade_id       Int      @id @default(autoincrement())
-  enrollment_no  String
-  faculty_no     String
-  course_code    String
-  academic_year  Int
-  semester_type  Int
-  grade          String?
-  grade_points   Decimal?
-  is_backlog     Boolean  @default(false)
-  is_improvement Boolean  @default(false)
-  uploaded_at    DateTime @default(now())
-  course         Course   @relation(fields: [course_code], references: [course_code])
-  student        Student  @relation(fields: [enrollment_no], references: [enrollment_no])
+  grade_id      Int      @id @default(autoincrement())
+  enrollment_no String
+  course_code   String
+  sem           String   // Format: "S24252" (academic year 2024-25, semester type 2)
+  semester_no   Int      // 1-8 semester number
+  grade         Grade?   // Enum-validated grade
+  uploaded_at   DateTime @default(now())
+  course        Course   @relation(fields: [course_code], references: [course_code])
+  student       Student  @relation(fields: [enrollment_no], references: [enrollment_no])
+
+  @@index([enrollment_no])
+  @@index([course_code])
+  @@index([sem])
+  @@index([enrollment_no, sem])
+  @@unique([enrollment_no, course_code, sem])
 }
 
 model SemesterResult {
   result_id               Int       @id @default(autoincrement())
   enrollment_no           String
-  faculty_no              String
-  academic_year           Int
-  semester_no             Int
-  semester_type           Int
-  branch_code             String
-  name                    String
-  spi                     Decimal?
-  cpi                     Decimal?
-  total_credits_earned    Int       @default(0)
+  sem                     String    // Format: "S24252" (academic year 2024-25, semester type 2)
   result_status           String?
   result_declaration_date DateTime?
   is_result_declared      Boolean   @default(false)
   remarks                 String?
   student                 Student   @relation(fields: [enrollment_no], references: [enrollment_no])
+
+  @@index([enrollment_no])
+  @@index([sem])
 }
 
 model CourseRegistration {
-  registration_id   Int       @id @default(autoincrement())
-  enrollment_no     String
-  course_code       String
-  academic_year     Int
-  semester_type     Int
-  registration_type String    @default("regular")
-  is_approved       Boolean   @default(false)
-  registered_at     DateTime  @default(now())
-  deleted_at        DateTime? // Soft delete timestamp
-  course            Course    @relation(fields: [course_code], references: [course_code])
-  student           Student   @relation(fields: [enrollment_no], references: [enrollment_no])
+  registration_id      Int                @id @default(autoincrement())
+  enrollment_no        String
+  course_code          String
+  academic_year        Int
+  semester_type        Int
+  registration_type    String             @default("regular")
+  registration_mode    RegistrationMode   @default(A)
+  status               RegistrationStatus @default(ACTIVE)
+  is_graduating_course Boolean            @default(false)
+  is_approved          Boolean            @default(false)
+  registered_at        DateTime           @default(now())
+  deleted_at           DateTime?
+  course               Course             @relation(fields: [course_code], references: [course_code])
+  student              Student            @relation(fields: [enrollment_no], references: [enrollment_no])
 }
 
 model CourseSchedule {
@@ -181,6 +243,38 @@ model RegistrationRule {
   updated_at DateTime @updatedAt
 }
 
+model CourseAttempt {
+  attempt_id        Int              @id @default(autoincrement())
+  enrollment_no     String
+  course_code       String
+  attempt_number    Int
+  attempt_type      AttemptType
+  academic_year     Int
+  semester_type     Int
+  semester_no       Int
+  registration_mode RegistrationMode
+  grade_obtained    String?
+  is_completed      Boolean          @default(false)
+  created_at        DateTime         @default(now())
+  student           Student          @relation(fields: [enrollment_no], references: [enrollment_no])
+  course            Course           @relation(fields: [course_code], references: [course_code])
+
+  @@unique([enrollment_no, course_code, attempt_number])
+  @@index([enrollment_no, course_code])
+  @@index([enrollment_no, academic_year])
+}
+
+model RegistrationAlert {
+  alert_id      Int       @id @default(autoincrement())
+  enrollment_no String
+  alert_type    String
+  alert_message String
+  is_resolved   Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  resolved_at   DateTime?
+  student       Student   @relation(fields: [enrollment_no], references: [enrollment_no])
+}
+
 model AuditLog {
   log_id           Int      @id @default(autoincrement())
   action_type      String
@@ -189,4 +283,40 @@ model AuditLog {
   affected_records Int      @default(0)
   timestamp        DateTime @default(now())
   teacher          Teacher? @relation(fields: [performed_by], references: [teacher_id])
+}
+
+model AdvancedCourseRequirement {
+  requirement_id   Int     @id @default(autoincrement())
+  course_code      String
+  requirement_type String  // "MIN_CPI", "MIN_GRADE_IN_COURSE", "MIN_CREDITS", "PERMISSION"
+  requirement_value String // "8.5", "CS201:B", "120", "HOD_APPROVAL"
+  description      String? // Human readable description
+  is_active        Boolean @default(true)
+  created_at       DateTime @default(now())
+  
+  course Course @relation(fields: [course_code], references: [course_code])
+  
+  @@index([course_code])
+  @@index([requirement_type])
+}
+
+model ImportLog {
+  import_id    Int      @id @default(autoincrement())
+  file_name    String
+  upload_type  String   // "students", "results", "courses"
+  total_rows   Int
+  valid_rows   Int
+  error_rows   Int
+  created      Int      @default(0)
+  updated      Int      @default(0)
+  failed       Int      @default(0)
+  uploaded_by  String   // enrollment_no or teacher email
+  uploaded_at  DateTime @default(now())
+  status       String   // "SUCCESS", "PARTIAL", "FAILED"
+  error_file   String?  // Path to error CSV if any
+  file_size    Int      // File size in bytes
+  
+  @@index([uploaded_by])
+  @@index([uploaded_at])
+  @@index([upload_type])
 }

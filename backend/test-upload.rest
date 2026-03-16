@@ -1,0 +1,51 @@
+### Test CSV Upload V2 - Courses
+POST http://localhost:3000/api/admin/upload/v2/process
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer YOUR_TOKEN_HERE
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+courses
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="courses.csv"
+Content-Type: text/csv
+
+course_code,course_name,credits,semester_no,branch_code,is_elective,is_advanced,elective_type,elective_group,course_type,max_seats,is_running
+CS101,Programming Fundamentals,3.0,1,CE,false,false,,,Theory,60,true
+CS499,Advanced Algorithms,4.0,8,CE,true,true,BRANCH,ADV_GROUP,Theory,20,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Test CSV Upload V2 - Results  
+POST http://localhost:3000/api/admin/upload/v2/process
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer YOUR_TOKEN_HERE
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+results
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="results.csv"
+Content-Type: text/csv
+
+faculty_no,enrollment_no,sem,no_of_courses,course1,grade1
+24COBEA001,gm7001,S24252,1,CS101,A+
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Test CSV Upload V2 - Students
+POST http://localhost:3000/api/admin/upload/v2/process
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer YOUR_TOKEN_HERE
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+students
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="students.csv"
+Content-Type: text/csv
+
+Sem,Br,FacultyN,EnrolN,Name,semester_no,Hall
+S24252,CE,24COBEA001,gm7001,Arjun Kumar,2,Morrison Court
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

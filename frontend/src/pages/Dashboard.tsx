@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import Header from '@/components/Header';
 import StudentDashboard from '@/components/StudentDashboard';
 import FacultyDashboard from '@/components/FacultyDashboard';
 import PullToRefresh from '@/components/PullToRefresh';
@@ -31,14 +30,16 @@ const Dashboard = () => {
         setCourses(data.courses || []);
         
         // Update auth context with student data
-        setStudentData({
-          enrollmentNo: data.enrollmentNo,
-          branch: data.branch,
-          admissionYear: data.admissionYear,
-          cpi: data.cpi,
-          totalCredits: data.totalCredits,
-          currentSemester: data.currentSemester,
-        });
+        if (data.enrollmentNo) {
+          setStudentData({
+            enrollmentNo: data.enrollmentNo,
+            branch: data.branch,
+            admissionYear: data.admissionYear,
+            cpi: data.cpi,
+            totalCredits: data.totalCredits,
+            currentSemester: data.currentSemester,
+          });
+        }
       }
     } catch (err) {
       const errorMessage = getErrorMessage(err);
@@ -60,9 +61,8 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background grid-background">
-        <Header />
-        <div className="pt-16 sm:pt-20 pb-8 sm:pb-12 px-3 sm:px-4">
-          <div className="container mx-auto max-w-6xl">
+        <div className="px-2 py-4 sm:px-3 sm:py-6">
+          <div className="container mx-auto max-w-[100vw] sm:max-w-[95vw] lg:max-w-7xl">
             <LoadingSpinner fullScreen={false} text="Loading dashboard..." className="min-h-[60vh]" />
           </div>
         </div>
@@ -73,9 +73,8 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background grid-background">
-        <Header />
-        <div className="pt-16 sm:pt-20 pb-8 sm:pb-12 px-3 sm:px-4">
-          <div className="container mx-auto max-w-6xl">
+        <div className="px-2 py-4 sm:px-3 sm:py-6">
+          <div className="container mx-auto max-w-[100vw] sm:max-w-[95vw] lg:max-w-7xl">
             <ErrorMessage 
               message={error} 
               onRetry={fetchDashboardData}
@@ -90,10 +89,8 @@ const Dashboard = () => {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background grid-background">
-        <Header />
-        
-        <div className="pt-16 sm:pt-20 pb-8 sm:pb-12 px-3 sm:px-4">
-          <div className="container mx-auto max-w-6xl">
+        <div className="px-1 py-2 sm:px-2 sm:py-3">
+          <div className="container mx-auto max-w-[100vw] sm:max-w-[95vw] lg:max-w-7xl">
             {user?.role === 'teacher' || user?.role === 'admin' ? (
               <FacultyDashboard />
             ) : (

@@ -4,6 +4,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import multer from "multer";
 import { authenticate, adminOnly } from "../middlewares/auth.middleware";
 import { uploadCSV, previewCSV } from "../controllers/upload.controller";
+import { uploadCSVV2, previewCSVV2, downloadErrorCSV } from "../controllers/upload-v2.controller";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.get("/test", (req, res) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 4.5 * 1024 * 1024, // 4.5MB limit (Vercel's request body limit)
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === "text/csv" || file.originalname.endsWith(".csv")) {
@@ -34,7 +35,7 @@ const multerErrorHandler = (err: any, req: Request, res: Response, next: NextFun
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({ 
         error: "File too large", 
-        message: "Maximum file size is 10MB" 
+        message: "Maximum file size is 4.5MB (Vercel limit)" 
       });
     }
     return res.status(400).json({ 
@@ -81,6 +82,35 @@ router.post(
   upload.single("file"),
   multerErrorHandler,
   previewCSV
+);
+
+// V2 endpoints with upload type support
+router.post(
+  "/v2/preview",
+  logRequest,
+  authenticate,
+  adminOnly,
+  upload.single("file"),
+  multerErrorHandler,
+  previewCSVV2
+);
+
+router.post(
+  "/v2/process",
+  logRequest,
+  authenticate,
+  adminOnly,
+  upload.single("file"),
+  multerErrorHandler,
+  uploadCSVV2
+);
+
+router.post(
+  "/v2/download-errors",
+  logRequest,
+  authenticate,
+  adminOnly,
+  downloadErrorCSV
 );
 
 export default router;

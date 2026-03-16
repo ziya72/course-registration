@@ -1,7 +1,8 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Bell, Menu, X, LogOut, Home } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -17,119 +18,114 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="fixed top-2 sm:top-3 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-md sm:max-w-xl md:max-w-2xl">
-      <nav className="nav-floating px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
-        {/* Logo */}
-        <Link to={user?.isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-1.5 sm:gap-2 text-foreground hover:text-primary transition-colors">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+      <nav className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+        {/* Logo - Mobile Optimized */}
+        <Link to={user?.isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2 sm:gap-3 text-foreground">
           <img 
             src="https://registration.fyup.amucoe.ac.in/assets/logo.png" 
             alt="AMU" 
-            className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
+            className="h-8 w-8 sm:h-10 sm:w-10 object-contain flex-shrink-0"
           />
-          <span className="text-[10px] sm:text-xs text-muted-foreground leading-tight hidden xs:block">Aligarh Muslim<br className="sm:hidden" /> University</span>
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-xs sm:text-sm font-semibold truncate">Course Registration</span>
+            <span className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">Portal</span>
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-1">
-          {user?.isLoggedIn ? (
-            <>
-              <Link
-                to="/dashboard"
-                className={`nav-pill text-xs sm:text-sm px-2 sm:px-3 py-1.5 ${
-                  isActive('/dashboard') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleLogout}
-                  className="text-muted-foreground hover:text-destructive text-xs h-7 px-2"
-                >
-                  Logout
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className={`nav-pill text-xs sm:text-sm px-2 sm:px-3 py-1.5 ${
-                  isActive('/login') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className={`nav-pill text-xs sm:text-sm px-2 sm:px-3 py-1.5 ${
-                  isActive('/register') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                Register
-              </Link>
-            </>
-          )}
-        </div>
+        {user?.isLoggedIn && (
+          <div className="hidden sm:flex items-center gap-4">
+            <Link
+              to="/dashboard"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/dashboard') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              Dashboard
+            </Link>
+            
+            {/* Notifications */}
+            <div className="relative">
+              <Bell className="h-5 w-5 text-muted-foreground hover:text-foreground cursor-pointer" />
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-xs">
+                3
+              </Badge>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        )}
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden px-2.5 py-1 text-xs font-medium rounded-lg hover:bg-muted transition-colors"
-        >
-          Menu
-        </button>
+        {/* Mobile Right Section */}
+        <div className="flex items-center gap-3 sm:hidden">
+          {user?.isLoggedIn && (
+            <div className="relative">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 rounded-full p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-xs">
+                3
+              </Badge>
+            </div>
+          )}
+          
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5 text-foreground" />
+            ) : (
+              <Menu className="h-5 w-5 text-foreground" />
+            )}
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden mt-1.5 glass-card rounded-xl p-2 animate-fade-in">
-          <div className="flex flex-col gap-0.5">
+        <div className="sm:hidden absolute top-full left-0 right-0 bg-background/98 backdrop-blur-sm border-b border-border shadow-lg">
+          <div className="px-4 py-4 space-y-2">
             {user?.isLoggedIn ? (
               <>
                 <Link
                   to="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`nav-pill text-center text-xs py-2 ${
-                    isActive('/dashboard') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive('/dashboard') 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'text-foreground hover:bg-muted'
                   }`}
                 >
+                  <Home className="h-4 w-4" />
                   Dashboard
                 </Link>
-                <div className="border-t border-border my-1.5"></div>
+                
+                <div className="border-t border-border my-2"></div>
+                
                 <button
                   onClick={() => {
                     handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="nav-pill text-center text-xs py-2 text-muted-foreground hover:text-destructive hover:bg-muted"
+                  className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                 >
+                  <LogOut className="h-4 w-4" />
                   Logout
                 </button>
               </>
             ) : (
-              <>
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`nav-pill text-center text-xs py-2 ${
-                    isActive('/login') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`nav-pill text-center text-xs py-2 ${
-                    isActive('/register') ? 'nav-pill-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  Register
-                </Link>
-              </>
+              <div className="text-center py-4 text-muted-foreground text-sm">
+                Please log in to access the portal
+              </div>
             )}
           </div>
         </div>

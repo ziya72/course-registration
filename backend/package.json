@@ -6,7 +6,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc"
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && tsc",
+    "seed": "ts-node prisma/seed-complete.ts",
+    "seed:simple": "ts-node prisma/seed-simple.ts",
+    "test-encryption": "ts-node test-encryption.ts"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +19,13 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@sendgrid/mail": "^8.1.6",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
+    "@types/node": "^25.0.8",
     "@types/papaparse": "^5.5.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -23,20 +34,15 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "papaparse": "^5.5.3",
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "typescript": "^5.9.3",
+    "ts-node": "^10.9.2"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.0.8",
     "nodemon": "^3.1.11",
-    "prism": "^4.1.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "prism": "^4.1.2"
   }
 }

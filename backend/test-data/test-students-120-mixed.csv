@@ -1,0 +1,121 @@
+Sem,Br,FacultyN,EnrolN,Name,semester_no,SPI,CPI,credit_earned,Hall,Remark
+S24251,CS,24COBEA001,GM1001,Amit Kumar,1,,,,,
+S24252,EE,24EEBEA002,GM2001,Priya Sharma,2,9.10,7.66,47.7,SS Hall,Excellent performance
+S24251,ME,24MEBEA003,GM2002,Rahul Singh,3,7.47,8.53,62.1,Strachey Hall,Dean's list
+S24252,EC,24ECBEA004,GM2003,Sneha Verma,4,7.53,7.52,85.1,Abdullah Hall,Needs improvement
+S24251,CH,24CHBEA005,GM2004,Vikram Reddy,5,6.18,6.69,105.6,Morrison Court,On probation
+S24252,CE,24COBEA006,GM2005,Anjali Iyer,6,8.46,6.54,120.4,,Regular student
+S24251,CS,24COBEA007,GM2006,Rohan Khan,7,7.00,6.42,140.3,Aftab Hall,
+S24252,EE,24EEBEA008,GM2007,Pooja Mehta,8,,,,,
+S24251,ME,24MEBEA009,GM2008,Arjun Patel,1,6.35,6.48,27.9,Strachey Hall,
+S24252,EC,24ECBEA010,GM2009,Neha Gupta,2,9.02,7.43,47.2,Abdullah Hall,Good standing
+S24251,CH,24CHBEA011,GM2010,Karan Yadav,3,8.32,8.73,68.7,Morrison Court,Excellent performance
+S24252,CE,24COBEA012,GM2011,Divya Joshi,4,,8.46,,,
+S24251,CS,24COBEA013,GM2012,Sanjay Nair,5,7.08,6.79,101.6,Aftab Hall,Needs improvement
+S24252,EE,24EEBEA014,GM2013,Riya Desai,6,,,128.1,,
+S24251,ME,24MEBEA015,GM2014,Aditya Malhotra,7,,,,,
+S24252,EC,24ECBEA016,GM2015,Kavya Kapoor,8,8.02,7.22,160.7,Abdullah Hall,
+S24251,CH,24CHBEA017,GM2016,Manish Chopra,1,8.07,7.59,23.8,Morrison Court,
+S24252,CE,24COBEA018,GM2017,Shreya Bose,2,6.64,6.88,43.6,,
+S24251,CS,24COBEA019,GM2018,Nikhil Rao,3,8.52,8.33,60.3,Aftab Hall,Good standing
+S24252,EE,24EEBEA020,GM2019,Ananya Pillai,4,6.14,8.19,81.3,SS Hall,Excellent performance
+S24251,ME,24MEBEA021,GM2020,Amit Kumar,5,7.61,8.19,103.9,Strachey Hall,Dean's list
+S24252,EC,24ECBEA022,GM2021,Priya Sharma,6,,,,,
+S24251,CH,24CHBEA023,GM2022,Rahul Singh,7,,9.37,,,
+S24252,CE,24COBEA024,GM2023,Sneha Verma,8,7.73,6.05,163.0,,Regular student
+S24251,CS,24COBEA025,GM2024,Vikram Reddy,1,9.26,8.83,28.2,Aftab Hall,
+S24252,EE,24EEBEA026,GM2025,Anjali Iyer,2,8.75,7.96,41.3,SS Hall,
+S24251,ME,24MEBEA027,GM2026,Rohan Khan,3,,,64.3,,
+S24252,EC,24ECBEA028,GM2027,Pooja Mehta,4,7.88,6.82,87.7,Abdullah Hall,Good standing
+S24251,CH,24CHBEA029,GM2028,Arjun Patel,5,,,,,
+S24252,CE,24COBEA030,GM2029,Neha Gupta,6,7.89,7.11,126.8,,Dean's list
+S24251,CS,24COBEA031,gm9030,Karan Yadav,7,6.90,7.08,142.7,Aftab Hall,Needs improvement
+S24252,EE,24EEBEA032,gm9031,Divya Joshi,8,8.07,8.16,168.6,SS Hall,On probation
+S24251,ME,24MEBEA033,gm9032,Sanjay Nair,1,6.30,8.92,27.9,Strachey Hall,Regular student
+S24252,EC,24ECBEA034,gm9033,Riya Desai,2,,7.28,,,
+S24251,CH,24CHBEA035,gm9034,Aditya Malhotra,3,9.25,6.09,67.8,Morrison Court,
+S24252,CE,24COBEA036,gm9035,Kavya Kapoor,4,,,,,
+S24251,CS,24COBEA037,gm9036,Manish Chopra,5,7.75,8.25,108.9,Aftab Hall,Good standing
+S24252,EE,24EEBEA038,gm9037,Shreya Bose,6,8.20,8.29,125.0,SS Hall,Excellent performance
+S24251,ME,24MEBEA039,gm9038,Nikhil Rao,7,9.20,8.55,141.9,Strachey Hall,Dean's list
+S24252,EC,24ECBEA040,gm9039,Ananya Pillai,8,,,164.1,,
+S24251,CH,24CHBEA041,gm9040,Amit Kumar,1,6.74,7.39,22.0,Morrison Court,On probation
+S24252,CE,24COBEA042,gm9041,Priya Sharma,2,7.08,6.87,40.5,,Regular student
+S24251,CS,24COBEA043,gm9042,Rahul Singh,3,,,,,
+S24252,EE,24EEBEA044,gm9043,Sneha Verma,4,7.74,7.07,84.7,SS Hall,
+S24251,ME,24MEBEA045,gm9044,Vikram Reddy,5,,7.23,,,
+S24252,EC,24ECBEA046,gm9045,Anjali Iyer,6,8.59,8.53,123.3,Abdullah Hall,Good standing
+S24251,CH,24CHBEA047,gm9046,Rohan Khan,7,7.66,6.14,147.1,Morrison Court,Excellent performance
+S24252,CE,24COBEA048,gm9047,Pooja Mehta,8,8.05,6.43,166.0,,Dean's list
+S24251,CS,24COBEA049,gm9048,Arjun Patel,1,8.67,9.35,20.9,Aftab Hall,Needs improvement
+S24252,EE,24EEBEA050,gm9049,Neha Gupta,2,,,,,
+S24251,ME,24MEBEA051,gm9050,Karan Yadav,3,6.30,7.27,65.0,Strachey Hall,Regular student
+S24252,EC,24ECBEA052,gm9051,Divya Joshi,4,8.45,6.21,82.8,Abdullah Hall,
+S24251,CH,24CHBEA053,gm9052,Sanjay Nair,5,,,105.8,,
+S24252,CE,24COBEA054,gm9053,Riya Desai,6,6.52,8.36,126.2,,
+S24251,CS,24COBEA055,gm9054,Aditya Malhotra,7,9.01,8.82,145.8,Aftab Hall,Good standing
+S24252,EE,24EEBEA056,gm9055,Kavya Kapoor,8,,7.29,,,
+S24251,ME,24MEBEA057,gm9056,Manish Chopra,1,,,,,
+S24252,EC,24ECBEA058,gm9057,Shreya Bose,2,8.92,6.50,41.4,Abdullah Hall,Needs improvement
+S24251,CH,24CHBEA059,gm9058,Nikhil Rao,3,6.02,6.99,66.8,Morrison Court,On probation
+S24252,CE,24COBEA060,gm9059,Ananya Pillai,4,7.10,7.47,87.0,,Regular student
+S24251,CS,24COBEA061,gm9060,Amit Kumar,5,8.81,7.51,102.9,Aftab Hall,
+S24252,EE,24EEBEA062,gm9061,Priya Sharma,6,8.12,7.36,122.5,SS Hall,
+S24251,ME,24MEBEA063,gm9062,Rahul Singh,7,6.07,8.48,142.3,Strachey Hall,
+S24252,EC,24ECBEA064,gm9063,Sneha Verma,8,,,,,
+S24251,CH,24CHBEA065,gm9064,Vikram Reddy,1,6.28,9.18,20.4,Morrison Court,Excellent performance
+S24252,CE,24COBEA066,gm9065,Anjali Iyer,2,,,40.2,,
+S24251,CS,24COBEA067,gm9066,Rohan Khan,3,,7.66,,,
+S24252,EE,24EEBEA068,gm9067,Pooja Mehta,4,8.63,8.14,84.7,SS Hall,On probation
+S24251,ME,24MEBEA069,gm9068,Arjun Patel,5,6.01,7.28,101.4,Strachey Hall,Regular student
+S24252,EC,24ECBEA070,gm9069,Neha Gupta,6,6.01,8.31,125.0,Abdullah Hall,
+S24251,CH,24CHBEA071,gm9070,Karan Yadav,7,,,,,
+S24252,CE,24COBEA072,gm9071,Divya Joshi,8,6.41,6.00,162.6,,
+S24251,CS,24COBEA073,gm9072,Sanjay Nair,1,6.15,8.78,25.6,Aftab Hall,Good standing
+S24252,EE,24EEBEA074,gm9073,Riya Desai,2,8.61,9.15,45.3,SS Hall,Excellent performance
+S24251,ME,24MEBEA075,gm9074,Aditya Malhotra,3,9.49,6.87,63.9,Strachey Hall,Dean's list
+S24252,EC,24ECBEA076,gm9075,Kavya Kapoor,4,7.44,6.07,83.3,Abdullah Hall,Needs improvement
+S24251,CH,24CHBEA077,gm9076,Manish Chopra,5,8.36,6.11,104.0,Morrison Court,On probation
+S24252,CE,24COBEA078,gm9077,Shreya Bose,6,,,,,
+S24251,CS,24COBEA079,gm9078,Nikhil Rao,7,,,146.4,,
+S24252,EE,24EEBEA080,gm9079,Ananya Pillai,8,6.73,8.48,167.7,SS Hall,
+S24251,ME,24MEBEA081,gm9080,Amit Kumar,1,9.02,6.66,21.2,Strachey Hall,
+S24252,EC,24ECBEA082,gm9081,Priya Sharma,2,7.52,8.43,48.6,Abdullah Hall,Good standing
+S24251,CH,24CHBEA083,gm9082,Rahul Singh,3,7.11,8.73,60.3,Morrison Court,Excellent performance
+S24252,CE,24COBEA084,gm9083,Sneha Verma,4,8.84,8.21,80.8,,Dean's list
+S24251,CS,24COBEA085,gm9084,Vikram Reddy,5,,,,,
+S24252,EE,24EEBEA086,gm9085,Anjali Iyer,6,6.24,7.08,128.0,SS Hall,On probation
+S24251,ME,24MEBEA087,gm9086,Rohan Khan,7,7.22,9.27,147.6,Strachey Hall,Regular student
+S24252,EC,24ECBEA088,gm9087,Pooja Mehta,8,8.68,7.24,169.6,Abdullah Hall,
+S24251,CH,24CHBEA089,gm9088,Arjun Patel,1,,8.35,,,
+S24252,CE,24COBEA090,gm9089,Neha Gupta,2,8.30,8.20,44.8,,
+S24251,CS,24COBEA091,gm9090,Karan Yadav,3,7.87,7.93,67.5,Aftab Hall,Good standing
+S24252,EE,24EEBEA092,gm9091,Divya Joshi,4,,,,,
+S24251,ME,24MEBEA093,gm9092,Sanjay Nair,5,6.06,9.50,101.5,Strachey Hall,Dean's list
+S24252,EC,24ECBEA094,gm9093,Riya Desai,6,7.14,8.77,122.7,Abdullah Hall,Needs improvement
+S24251,CH,24CHBEA095,gm9094,Aditya Malhotra,7,8.82,7.50,147.5,Morrison Court,On probation
+S24252,CE,24COBEA096,gm9095,Kavya Kapoor,8,6.49,7.45,160.3,,Regular student
+S24251,CS,24COBEA097,gm9096,Manish Chopra,1,7.52,8.16,25.4,Aftab Hall,
+S24252,EE,24EEBEA098,gm9097,Shreya Bose,2,7.22,8.28,46.6,SS Hall,
+S24251,ME,24MEBEA099,gm9098,Nikhil Rao,3,,,,,
+S24252,EC,24ECBEA100,gm9099,Ananya Pillai,4,,9.38,,,
+S24251,CH,,24CHBEA101,Amit Kumar,5,8.17,6.06,106.0,Morrison Court,Excellent performance
+S24252,CE,24COBEA102,,Priya Sharma,6,9.42,8.17,122.8,,Dean's list
+S24251,CS,24COBEA103,gm9102,,7,7.37,8.89,140.6,Aftab Hall,Needs improvement
+S24252,EE,24EEBEA104,gm9103,Sneha Verma,9,8.75,6.45,166.9,SS Hall,On probation
+S24251,,24MEBEA105,gm9104,Vikram Reddy,1,8.77,6.88,26.1,Strachey Hall,Regular student
+S24252,EC,,24ECBEA106,Anjali Iyer,2,7.31,9.15,46.9,Abdullah Hall,
+S24251,CH,24CHBEA107,,Rohan Khan,3,6.80,7.02,63.4,Morrison Court,
+S24252,CE,24COBEA108,gm9107,,4,7.99,7.95,82.5,,
+S24251,CS,24COBEA109,gm9108,Arjun Patel,0,7.54,9.30,108.6,Aftab Hall,Good standing
+S24252,,24EEBEA110,gm9109,Neha Gupta,6,7.15,8.52,120.0,SS Hall,Excellent performance
+S24251,ME,,24MEBEA111,Karan Yadav,7,6.94,6.60,149.3,Strachey Hall,Dean's list
+S24252,EC,24ECBEA112,,Divya Joshi,8,9.42,8.49,169.9,Abdullah Hall,Needs improvement
+S24251,CH,24CHBEA113,gm9112,,1,6.67,6.69,23.5,Morrison Court,On probation
+S24252,CE,24COBEA114,gm9113,Riya Desai,9,6.69,8.71,47.5,,Regular student
+S24251,,24COBEA115,gm9114,Aditya Malhotra,3,8.74,7.21,68.5,Aftab Hall,
+S24252,EE,,24EEBEA116,Kavya Kapoor,4,7.07,8.49,89.4,SS Hall,
+S24251,ME,24MEBEA117,,Manish Chopra,5,6.37,8.05,102.8,Strachey Hall,
+S24252,EC,24ECBEA118,gm9117,,6,8.39,7.09,129.0,Abdullah Hall,Good standing
+S24251,CH,24CHBEA119,gm9118,Nikhil Rao,0,6.40,6.57,142.9,Morrison Court,Excellent performance
+S24252,,24COBEA120,gm9119,Ananya Pillai,8,7.54,8.66,161.9,,Dean's list

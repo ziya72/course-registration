@@ -97,7 +97,7 @@ export class RegistrationControlController {
       }
 
       const phase = await prisma.registrationPhase.update({
-        where: { phase_id: parseInt(phaseId) },
+        where: { phase_id: parseInt(Array.isArray(phaseId) ? phaseId[0] : phaseId) },
         data: updateData,
       });
 
@@ -162,7 +162,7 @@ export class RegistrationControlController {
       }
 
       const phase = await prisma.registrationPhase.update({
-        where: { phase_id: parseInt(phaseId) },
+        where: { phase_id: parseInt(Array.isArray(phaseId) ? phaseId[0] : phaseId) },
         data: { is_active },
       });
 

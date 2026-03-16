@@ -1,22 +1,36 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { processApiResponse, validateEncryptionConfig, testEncryptionSetup, testEncrypt, testActualData } from '../utils/encryption';
 
 // =============================================================================
 // API CONFIGURATION
 // =============================================================================
-// Backend API base URL - temporarily hardcoded to fix env var issue
-const BASE_URL = 'http://localhost:5000';
+// Backend API base URL from environment variable
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // Debug: Log the base URL to console
 console.log('🔧 API Base URL:', BASE_URL);
 console.log('🔧 Environment:', import.meta.env.MODE);
 console.log('🔧 VITE_API_BASE_URL from env:', import.meta.env.VITE_API_BASE_URL);
 
+// Validate encryption configuration
+if (!validateEncryptionConfig()) {
+  console.warn('⚠️ Invalid encryption configuration. Check VITE_ENCRYPTION_KEY and VITE_ENCRYPTION_IV');
+}
+
+// Test encryption setup
+testEncryptionSetup();
+
+// Test with actual encrypted data from login response
+if (import.meta.env.VITE_ENABLE_ENCRYPTION === 'true') {
+  testActualData();
+}
+
 // =============================================================================
 // AXIOS INSTANCE
 // =============================================================================
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60 seconds for course registration (handles multiple validations)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -47,16 +61,42 @@ api.interceptors.request.use(
 );
 
 // =============================================================================
-// RESPONSE INTERCEPTOR - Handle common errors
+// RESPONSE INTERCEPTOR - Handle common errors and decrypt responses
 // =============================================================================
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    try {
+      // Process response data (decrypt if encrypted)
+      response.data = processApiResponse(response.data);
+      return response;
+    } catch (error) {
+      console.error('❌ Response processing error:', error);
+      // Return original response if processing fails
+      console.warn('⚠️ Returning original response due to processing error');
+      return response;
+    }
+  },
   (error: AxiosError) => {
+    // Decrypt error response if encrypted
+    if (error.response?.data) {
+      try {
+        error.response.data = processApiResponse(error.response.data);
+      } catch (decryptError) {
+        console.error('❌ Error response decryption failed:', decryptError);
+      }
+    }
+
     if (error.response?.status === 401) {
-      // Token expired or invalid - clear storage and redirect
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      window.location.href = '/login';
+      // Check if this is a login attempt vs token expiration
+      const isLoginRequest = error.config?.url === '/api/auth/login';
+      
+      if (!isLoginRequest) {
+        // Token expired or invalid - clear storage and redirect
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        window.location.href = '/login';
+      }
+      // For login requests, let the component handle the error
     }
     return Promise.reject(error);
   }
@@ -68,13 +108,16 @@ api.interceptors.response.use(
 export interface LoginCredentials {
   email: string;
   password: string;
+  role: 'student' | 'teacher' | 'admin';
 }
 
 export interface RegisterData {
   name: string;
   email: string;
-  studentId: string;
+  enrollment_no?: string;
+  faculty_no?: string;
   password: string;
+  confirmPassword?: string;
   role?: 'student' | 'faculty';
 }
 
@@ -84,7 +127,7 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
-    role: 'student' | 'faculty';
+    role: 'student' | 'teacher' | 'admin';
   };
   message?: string;
 }
@@ -110,6 +153,30 @@ export interface Course {
   status?: string;
   instructor?: string;
   schedule?: string;
+  semester?: number;
+  isElective?: boolean;
+  electiveGroup?: string | null;
+  courseType?: string;
+  isAutoSelected?: boolean;
+  registrationType?: 'regular' | 'backlog' | 'improvement' | 'graduating';
+  registrationMode?: 'A' | 'B' | 'C';
+  allowedModes?: string[];
+  previousAttempts?: number;
+  lastGrade?: string;
+  lastGradePoints?: number;
+  currentGrade?: string;
+  currentGradePoints?: number;
+  attemptType?: string;
+  attemptNumber?: number;
+  maxSeats?: number | null;
+  currentEnrollment?: number;
+  availableSeats?: number | null;
+  isRunning?: boolean;
+  prerequisites?: Array<{
+    courseCode: string;
+    courseName: string;
+    minGrade: string;
+  }>;
 }
 
 export interface ApiError {
@@ -122,12 +189,67 @@ export interface ApiError {
 // =============================================================================
 
 /**
+ * Request OTP for email verification
+ * @endpoint POST /api/auth/request-otp
+ */
+export const requestOTP = async (email: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/api/auth/request-otp', { email });
+  return response.data;
+};
+
+/**
+ * Verify OTP code
+ * @endpoint POST /api/auth/verify-otp
+ */
+export const verifyOTP = async (email: string, otp: string): Promise<{ message: string; verified: boolean }> => {
+  const response = await api.post<{ message: string; verified: boolean }>('/api/auth/verify-otp', { email, otp });
+  return response.data;
+};
+
+/**
  * Login user with email and password
  * @endpoint POST /api/auth/login
  */
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const response = await api.post<AuthResponse>('/api/auth/login', credentials);
-  return response.data;
+  try {
+    // Validate input
+    if (!credentials.email || !credentials.password || !credentials.role) {
+      throw new Error('Email, password, and role are required');
+    }
+    
+    // Validate role
+    if (!['student', 'teacher', 'admin'].includes(credentials.role)) {
+      throw new Error('Invalid role. Must be student, teacher, or admin');
+    }
+    
+    const response = await api.post<AuthResponse>('/api/auth/login', credentials);
+    
+    // Validate response
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
+    
+    if (!response.data.token) {
+      throw new Error('Authentication failed: No token received');
+    }
+    
+    if (!response.data.user) {
+      throw new Error('Authentication failed: No user data received');
+    }
+    
+    return response.data;
+    
+  } catch (error: any) {
+    // Re-throw with more specific error information
+    if (error.response) {
+      const serverError = error.response.data?.error || error.response.data?.message || `Server error (${error.response.status})`;
+      throw new Error(serverError);
+    } else if (error.request) {
+      throw new Error('Unable to connect to server. Please check your internet connection.');
+    } else {
+      throw error;
+    }
+  }
 };
 
 /**
@@ -143,13 +265,40 @@ export const registerUser = async (data: RegisterData): Promise<{ message: strin
  * Logout user (optional server-side logout)
  * @endpoint POST /api/auth/logout
  */
-export const logoutUser = async (): Promise<void> => {
+export const logoutUser = async (email?: string): Promise<void> => {
   try {
-    await api.post('/api/auth/logout');
+    await api.post('/api/auth/logout', email ? { email } : {});
   } catch (error) {
     // Logout should succeed even if server call fails
     console.warn('Server logout failed, proceeding with local logout');
   }
+};
+
+/**
+ * Forgot password - request OTP
+ * @endpoint POST /api/auth/forgot-password
+ */
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/api/auth/forgot-password', { email });
+  return response.data;
+};
+
+/**
+ * Verify reset OTP
+ * @endpoint POST /api/auth/verify-reset-otp
+ */
+export const verifyResetOtp = async (email: string, otp: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/api/auth/verify-reset-otp', { email, otp });
+  return response.data;
+};
+
+/**
+ * Reset password using OTP
+ * @endpoint POST /api/auth/reset-password
+ */
+export const resetPassword = async (email: string, otp: string, newPassword: string): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>('/api/auth/reset-password', { email, otp, newPassword });
+  return response.data;
 };
 
 // =============================================================================
@@ -184,11 +333,57 @@ export const getAvailableCourses = async (): Promise<Course[]> => {
 };
 
 /**
- * Register for a course
+ * Register for multiple courses with modes
  * @endpoint POST /api/courses/register
  */
-export const registerForCourse = async (courseCode: string): Promise<{ message: string }> => {
-  const response = await api.post<{ message: string }>('/api/courses/register', { course_code: courseCode });
+export const registerForCourses = async (courses: Array<{
+  courseCode: string;
+  registrationType: 'regular' | 'backlog' | 'improvement' | 'graduating';
+  registrationMode: 'A' | 'B' | 'C';
+}>): Promise<{
+  message: string;
+  registered: Array<{
+    courseCode: string;
+    courseName: string;
+    credits: number;
+    registrationType: string;
+    registrationMode: string;
+    attemptType: string;
+    attemptNumber: number;
+    registeredAt: string;
+  }>;
+  totalCredits: number;
+  errors?: Array<{
+    courseCode: string;
+    error: string;
+    reason: string;
+    details?: any;
+  }>;
+}> => {
+  const response = await api.post('/api/courses/register', { courses });
+  return response.data;
+};
+
+/**
+ * Get available courses with filter support
+ * @endpoint GET /api/courses/available?filter=all|eligible|blocked|improvement|backlog
+ */
+export const getAvailableCoursesWithFilter = async (filter: string = 'eligible'): Promise<{
+  courses: Course[];
+  electiveGroups: Array<{
+    groupCode: string;
+    groupName: string;
+    minSelection: number;
+    maxSelection: number;
+    courses: Course[];
+  }>;
+  filter: string;
+  deadlines: {
+    currentPhase: string;
+    phaseEndDate: string;
+  };
+}> => {
+  const response = await api.get(`/api/courses/available?filter=${filter}`);
   return response.data;
 };
 
@@ -412,6 +607,7 @@ export const addCourse = async (courseData: {
   semesterNo: number;
   branchCode: string;
   isElective?: boolean;
+  isAdvanced?: boolean;
   electiveGroup?: string;
   courseType?: string;
 }): Promise<{ message: string }> => {
@@ -634,8 +830,17 @@ export const previewCSV = async (file: File): Promise<{
  */
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    const apiError = error.response?.data as ApiError | undefined;
-    return apiError?.message || error.message || 'An unexpected error occurred';
+    // Check if there's a response from the server
+    if (error.response?.data) {
+      const apiError = error.response.data as any;
+      // Backend sends errors as { error: "message" } or { message: "message" }
+      return apiError.error || apiError.message || 'An unexpected error occurred';
+    }
+    // Network error or no response from server
+    if (error.code === 'ERR_NETWORK' || !error.response) {
+      return 'Unable to connect to server. Please check your connection.';
+    }
+    return error.message || 'An unexpected error occurred';
   }
   if (error instanceof Error) {
     return error.message;

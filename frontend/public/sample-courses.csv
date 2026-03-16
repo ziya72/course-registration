@@ -1,0 +1,51 @@
+course_code,course_name,credits,semester_no,branch_code,is_elective,is_advanced,elective_type,elective_group,course_type,max_seats,is_running
+ACS1112,Applied Chemistry,4.0,1,ALL,false,false,,,Theory,100,true
+ACS1912,Applied Chemistry Lab,1.0,1,ALL,false,false,,,Lab,100,true
+AMS1112,Applied Mathematics-I,4.0,1,ALL,false,false,,,Theory,100,true
+CEU1112,Environmental Studies,3.0,1,ALL,false,false,,,Theory,100,true
+COA1912,Computer Programming Lab,2.0,1,ALL,false,false,,,Lab,100,true
+EEA1112,Principles of Electrical Engineering,4.0,1,ALL,false,false,,,Theory,100,true
+MEA1112,Thermal Sciences,3.0,1,ALL,false,false,,,Theory,100,true
+MEA1912,Engineering Graphics Lab,1.0,1,ALL,false,false,,,Lab,100,true
+AMS1122,Applied Mathematics-II,4.0,2,ALL,false,false,,,Theory,100,true
+APS1112,Applied Physics,4.0,2,ALL,false,false,,,Theory,100,true
+APS1912,Applied Physics Lab,1.0,2,ALL,false,false,,,Lab,100,true
+ELA1112,Principles of Electronics Engineering,4.0,2,ALL,false,false,,,Theory,100,true
+EZH1112,English,3.0,2,ALL,false,false,,,Theory,100,true
+EZH1912,Communication Skills Lab,1.0,2,ALL,false,false,,,Lab,100,true
+MEA1122,Engineering Mechanics,3.0,2,ALL,false,false,,,Theory,100,true
+MEA1922,Engineering Workshop,2.0,2,ALL,false,false,,,Practical,100,true
+AMS2012,Higher Mathematics,4.0,3,CE,false,false,,,Theory,60,true
+COC2032,Object Oriented Programming,4.0,3,CE,false,false,,,Theory,60,true
+COC2062,Data Structure and Algorithm,4.0,3,CE,false,false,,,Theory,60,true
+COC2072,Digital Logic and Computer Design,4.0,3,CE,false,false,,,Theory,60,true
+COC2122,Database Management System,4.0,3,CE,false,false,,,Theory,60,true
+COC2932,C Programming Lab,1.0,3,CE,false,false,,,Lab,60,true
+ELA2112,Electronic Devices & Circuits,4.0,3,CE,false,false,,,Theory,60,true
+AMS2232,Higher Mathematics,4.0,3,EE,false,false,,,Theory,50,true
+APS2052,Electrical Engineering Materials,3.0,3,EE,false,false,,,Theory,50,true
+EEC2112,Electrical Machines-I,4.0,3,EE,false,false,,,Theory,50,true
+EEC2712,Circuit Theory,4.0,3,EE,false,false,,,Theory,50,true
+EEC2722,Electromagnetic Field Theory,4.0,3,EE,false,false,,,Theory,50,true
+EEC2732,Signals & Systems,4.0,3,EE,false,false,,,Theory,50,true
+EEC2912,Electrical Machines Lab I,1.0,3,EE,false,false,,,Lab,50,true
+EEU201X,Ethics in Engineering Practice,2.0,3,EE,false,false,,,Theory,50,true
+COC2114,Data Structure & Lab,4.0,4,CE,false,false,,,Theory,60,true
+COC2142,Design & Analysis of Algorithm,4.0,4,CE,false,false,,,Theory,60,true
+COC2222,Digital Design & Simulation Lab,1.0,4,CE,false,false,,,Lab,60,true
+COC2082,Computer Architecture,4.0,4,CE,false,false,,,Theory,60,true
+AMS2622,Numerical Analysis,4.0,4,CE,false,false,,,Theory,60,true
+COC2412,Fundamentals of Digital Signal Processing,4.0,4,CE,false,false,,,Theory,60,true
+ELA2502,Electronics Laboratory,1.0,4,CE,false,false,,,Lab,60,true
+COC2999,Advanced Machine Learning,4.0,4,CE,false,true,,,Theory,25,true
+COC2888,Web Development Elective,3.0,4,CE,true,false,BRANCH,WEB_GROUP,Theory,40,true
+EEC2122,Electrical Machines II,4.0,4,EE,false,false,,,Theory,50,true
+EEC2132,Electronics I,4.0,4,EE,false,false,,,Theory,50,true
+EEC2312,Power System Engineering,4.0,4,EE,false,false,,,Theory,50,true
+EEC2322,Electrical Measurements,3.0,4,EE,false,false,,,Theory,50,true
+EEC2412,Control Systems,4.0,4,EE,false,false,,,Theory,50,true
+EEC2932,Circuits and Measurements Lab,1.5,4,EE,false,false,,,Lab,50,true
+ELA2112,Applied Digital Circuit,3.0,4,EE,false,false,,,Theory,50,true
+MEH2452,Engineering Economy & Management,3.0,4,EE,false,false,,,Theory,50,true
+EEC2999,Advanced Power Electronics,4.0,4,EE,false,true,,,Theory,20,true
+EEC2777,Renewable Energy Systems,3.0,4,EE,true,false,BRANCH,ENERGY_GROUP,Theory,35,true

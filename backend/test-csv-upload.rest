@@ -1,0 +1,132 @@
+### CSV Upload System - API Testing
+### Base URL
+@baseUrl = http://localhost:5000
+@token = YOUR_ADMIN_TOKEN_HERE
+
+### ============================================
+### 1. LOGIN AS ADMIN (Get Token First)
+### ============================================
+POST {{baseUrl}}/api/auth/signin
+Content-Type: application/json
+
+{
+  "email": "dr.sharma@amu.ac.in",
+  "password": "admin123"
+}
+
+### ============================================
+### 2. PREVIEW STUDENTS CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/preview
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+students
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="students-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/students-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### 3. UPLOAD STUDENTS CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+students
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="students-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/students-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### 4. PREVIEW COURSES CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/preview
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+courses
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="courses-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/courses-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### 5. UPLOAD COURSES CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+courses
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="courses-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/courses-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### 6. PREVIEW RESULTS CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/preview
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+results
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="results-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/results-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### 7. UPLOAD RESULTS CSV
+### ============================================
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+results
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="results-sample.csv"
+Content-Type: text/csv
+
+< ./sample-csvs/results-sample.csv
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ============================================
+### NOTES
+### ============================================
+# 1. Replace {{token}} with actual JWT token from login response
+# 2. Upload order: Students → Courses → Results
+# 3. Always preview before uploading
+# 4. Check response for created/updated/failed counts
+# 5. Review errors array for any issues

@@ -12,25 +12,44 @@ export interface CreditValidationResult {
 }
 
 /**
- * Calculate total credits for a student's registered courses
+ * Calculate total credits for a student's registered courses in current semester
  */
 export async function calculateCurrentCredits(
   enrollmentNo: string
 ): Promise<number> {
   try {
+    // Get current academic year and semester type
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const semesterType = currentMonth >= 7 ? 1 : 2;
+
     const registrations = await prisma.courseRegistration.findMany({
       where: {
         enrollment_no: enrollmentNo,
+        academic_year: currentYear,
+        semester_type: semesterType,
+        deleted_at: null, // Only count active registrations
       },
       include: {
         course: true,
       },
     });
 
-    return registrations.reduce(
-      (total, reg) => total + reg.course.credits,
+    const totalCredits = registrations.reduce(
+      (total, reg) => total + Number(reg.course.credits), // Convert Decimal to number
       0
     );
+
+    console.log(`💳 Current credits for ${enrollmentNo}:`, {
+      academicYear: currentYear,
+      semesterType,
+      registrationCount: registrations.length,
+      totalCredits,
+      courses: registrations.map(r => `${r.course_code} (${r.course.credits}cr)`),
+    });
+
+    return totalCredits;
   } catch (error) {
     console.error("Error calculating credits:", error);
     throw new Error("Failed to calculate credits");
@@ -57,7 +76,7 @@ export async function validateCreditLimit(
       throw new Error("Course not found");
     }
 
-    const newCourseCredits = course.credits;
+    const newCourseCredits = Number(course.credits); // Convert Decimal to number
     const totalCredits = currentCredits + newCourseCredits;
 
     // Get max credits rule

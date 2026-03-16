@@ -38,6 +38,7 @@ const AddCourseDialog = ({ open, onOpenChange, onSuccess }: AddCourseDialogProps
     semesterNo: '',
     branchCode: '',
     isElective: false,
+    isAdvanced: false,
     electiveGroup: '',
     courseType: 'Theory',
   });
@@ -166,6 +167,7 @@ const AddCourseDialog = ({ open, onOpenChange, onSuccess }: AddCourseDialogProps
         semesterNo: parseInt(formData.semesterNo),
         branchCode: formData.branchCode.toUpperCase(),
         isElective: formData.isElective,
+        isAdvanced: formData.isAdvanced,
         electiveGroup: formData.isElective && formData.electiveGroup ? formData.electiveGroup : undefined,
         courseType: formData.courseType,
       });
@@ -183,6 +185,7 @@ const AddCourseDialog = ({ open, onOpenChange, onSuccess }: AddCourseDialogProps
         semesterNo: '',
         branchCode: '',
         isElective: false,
+        isAdvanced: false,
         electiveGroup: '',
         courseType: 'Theory',
       });
@@ -414,6 +417,24 @@ const AddCourseDialog = ({ open, onOpenChange, onSuccess }: AddCourseDialogProps
                 id="isElective"
                 checked={formData.isElective}
                 onCheckedChange={(checked) => setFormData({ ...formData, isElective: checked })}
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Is Advanced */}
+            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="isAdvanced" className="cursor-pointer">
+                  Advanced Course
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Course with special grade requirements (e.g., CPI ≥ 8.5)
+                </p>
+              </div>
+              <Switch
+                id="isAdvanced"
+                checked={formData.isAdvanced}
+                onCheckedChange={(checked) => setFormData({ ...formData, isAdvanced: checked })}
                 disabled={isLoading}
               />
             </div>

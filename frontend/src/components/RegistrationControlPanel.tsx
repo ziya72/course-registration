@@ -126,12 +126,12 @@ const RegistrationControlPanel = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Registration Window Control</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="text-lg sm:text-2xl font-bold text-foreground">Registration Window Control</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Configure registration phases with start and end dates
           </p>
         </div>
@@ -139,16 +139,17 @@ const RegistrationControlPanel = () => {
           <Button 
             onClick={handleSaveAll} 
             disabled={isSaving}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
+            size="sm"
           >
             {isSaving ? (
               <>
-                <LoadingSpinner className="h-4 w-4" />
+                <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4" />
                 Saving...
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save className="h-3 w-3 sm:h-4 sm:w-4" />
                 Save All Changes
               </>
             )}
@@ -157,12 +158,12 @@ const RegistrationControlPanel = () => {
       </div>
 
       {/* Info Box */}
-      <Card className="p-4 bg-blue-500/5 border-blue-500/20">
-        <div className="flex gap-3">
-          <AlertCircle className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-muted-foreground">
+      <Card className="p-3 sm:p-4 bg-blue-500/5 border-blue-500/20">
+        <div className="flex gap-2 sm:gap-3">
+          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">How it works:</p>
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-inside space-y-0.5 sm:space-y-1">
               <li>Set start and end dates for each registration phase</li>
               <li>Toggle phases on/off to enable or disable them</li>
               <li>Students can only register during active phases</li>
@@ -173,25 +174,25 @@ const RegistrationControlPanel = () => {
       </Card>
 
       {/* Phases List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {phases.map((phase) => {
           const status = getPhaseStatus(phase);
           
           return (
-            <Card key={phase.phase_id} className="p-6">
-              <div className="space-y-4">
+            <Card key={phase.phase_id} className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Phase Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold text-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground">
                         {phase.phase_label}
                       </h3>
                       {getStatusBadge(status)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       {phase.is_enabled ? 'Enabled' : 'Disabled'}
                     </span>
                     <Switch
@@ -203,10 +204,10 @@ const RegistrationControlPanel = () => {
 
                 {/* Date Pickers */}
                 {phase.is_enabled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     {/* Start Date */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-xs sm:text-sm font-medium text-foreground">
                         Start Date & Time
                       </label>
                       <Popover>
@@ -214,11 +215,11 @@ const RegistrationControlPanel = () => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal",
+                              "w-full justify-start text-left font-normal h-9 sm:h-10 text-xs sm:text-sm",
                               !phase.start_date && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             {phase.start_date ? (
                               format(new Date(phase.start_date), "PPP")
                             ) : (
@@ -239,7 +240,7 @@ const RegistrationControlPanel = () => {
 
                     {/* End Date */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">
+                      <label className="text-xs sm:text-sm font-medium text-foreground">
                         End Date & Time
                       </label>
                       <Popover>
@@ -247,11 +248,11 @@ const RegistrationControlPanel = () => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal",
+                              "w-full justify-start text-left font-normal h-9 sm:h-10 text-xs sm:text-sm",
                               !phase.end_date && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             {phase.end_date ? (
                               format(new Date(phase.end_date), "PPP")
                             ) : (
@@ -274,8 +275,8 @@ const RegistrationControlPanel = () => {
 
                 {/* Phase Info */}
                 {phase.is_enabled && phase.start_date && phase.end_date && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2 border-t">
-                    <Clock className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground pt-2 border-t">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>
                       Duration: {format(new Date(phase.start_date), "MMM d")} - {format(new Date(phase.end_date), "MMM d, yyyy")}
                     </span>
@@ -288,9 +289,9 @@ const RegistrationControlPanel = () => {
       </div>
 
       {/* Example Timeline */}
-      <Card className="p-6 bg-muted/30">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Example Timeline</h3>
-        <div className="space-y-2 text-sm">
+      <Card className="p-4 sm:p-6 bg-muted/30">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Example Timeline</h3>
+        <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Regular Registration</span>
             <span className="font-medium">1 Aug - 5 Aug</span>

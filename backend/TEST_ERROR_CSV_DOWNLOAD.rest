@@ -1,0 +1,117 @@
+### Test Error CSV Download Feature
+### This file demonstrates the error CSV download functionality
+
+### 1. Login as Admin/Teacher
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "teacher@example.com",
+  "password": "password123"
+}
+
+### Store the token from response
+@authToken = {{login.response.body.token}}
+
+### 2. Upload CSV with some invalid rows (will generate errors)
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+students
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="students-with-errors.csv"
+Content-Type: text/csv
+
+Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result
+S2221,CE,18CE001,GK1001,John Doe,4,Hall A,8.5,8.2,60,Pass
+S2221,,18CE002,GK1002,Jane Smith,4,Hall B,9.0,8.8,60,Pass
+S2221,CE,,GK1003,Bob Wilson,0,Hall C,7.5,7.8,55,Pass
+S2221,CE,18CE004,,Alice Brown,4,Hall D,8.0,8.5,58,Pass
+S2221,CE,18CE005,GK1005,Charlie Davis,4,Hall E,9.5,9.2,62,Pass
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Expected Response:
+# {
+#   "success": false,
+#   "uploadType": "students",
+#   "inserted": {
+#     "created": 2,
+#     "updated": 0,
+#     "failed": 3
+#   },
+#   "errors": [
+#     "Row 3: Missing branch code",
+#     "Row 4: Missing faculty number, Invalid semester",
+#     "Row 5: Missing enrollment number"
+#   ],
+#   "errorCSV": "row_number,Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result,error_message\n3,S2221,,18CE002,GK1002,Jane Smith,4,Hall B,9.0,8.8,60,Pass,\"Missing branch code\"...",
+#   "hasErrorCSV": true
+# }
+
+### 3. Download Error CSV (use errorCSV from previous response)
+POST {{baseUrl}}/api/admin/upload/v2/download-errors
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "errorCSV": "row_number,Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result,error_message\n3,S2221,,18CE002,GK1002,Jane Smith,4,Hall B,9.0,8.8,60,Pass,\"Missing branch code\"\n4,S2221,CE,,GK1003,Bob Wilson,0,Hall C,7.5,7.8,55,Pass,\"Missing faculty number; Invalid semester\"\n5,S2221,CE,18CE004,,Alice Brown,4,Hall D,8.0,8.5,58,Pass,\"Missing enrollment number\""
+}
+
+### Expected: CSV file download with failed rows
+
+### 4. Test with Courses Upload (with errors)
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+courses
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="courses-with-errors.csv"
+Content-Type: text/csv
+
+course_code,course_name,credits,semester_no,branch_code,is_elective,elective_type,elective_group,course_type,max_seats,is_running
+CE301,Data Structures,4,3,CE,false,,,,60,true
+,Missing Code Course,3,4,CE,false,,,,50,true
+CE303,Invalid Semester,3,0,CE,false,,,,40,true
+CE304,Missing Credits,,4,CE,false,,,,45,true
+CE305,Elective Without Type,3,5,CE,true,,,Theory,30,true
+CE306,Valid Course,3,5,CE,true,BRANCH,CE_E1,Theory,35,true
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Expected: 2 valid courses, 4 failed with error CSV
+
+### 5. Test with Results Upload (with errors)
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="uploadType"
+
+results
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="results-with-errors.csv"
+Content-Type: text/csv
+
+faculty_no,enrollment_no,semester,no_of_courses,course1,grade1,course2,grade2
+18CE001,GK1001,S2221,2,CE301,A,CE302,B+
+,GK1002,S2221,1,CE301,A
+18CE003,,S2221,2,CE301,X,CE302,A
+18CE004,GK1004,S2221,2,CE301,A,INVALID999,B
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Expected: Some valid grade records, some failed with error CSV
+
+### NOTES:
+# 1. Error CSV includes original row data + error_message column
+# 2. Users can download, fix errors, and re-upload
+# 3. Row numbers match original CSV (including header)
+# 4. Multiple errors per row are joined with semicolons
+# 5. Frontend automatically triggers download with proper filename

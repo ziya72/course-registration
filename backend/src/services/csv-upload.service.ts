@@ -316,30 +316,41 @@ export async function processAndInsertData(rows: ParsedRow[]): Promise<{
 
           // Create grade record
           const grade = courseGrade.grade === "0" ? null : courseGrade.grade;
-          const grade_points_value = grade ? (gradePoints[grade] ?? 0.0) : null;
 
           // Check if grade record already exists
           const existingGrade = await prisma.gradeRecord.findFirst({
             where: {
               enrollment_no: row.enrollment_no,
               course_code: courseGrade.course_code,
-              academic_year: semesterInfo.academic_year,
-              semester_type: semesterInfo.semester_type,
+              sem: `S${semesterInfo.academic_year.toString().slice(-2)}${semesterInfo.semester_type}${row.current_semester || 1}${semesterInfo.semester_type}`,
             },
           });
 
           if (!existingGrade) {
+            // Convert string grade to Grade enum
+            let gradeEnum: any = null;
+            if (grade) {
+              const gradeMap: { [key: string]: string } = {
+                'A+': 'A_PLUS',
+                'A': 'A',
+                'B+': 'B_PLUS', 
+                'B': 'B',
+                'C': 'C',
+                'D': 'D',
+                'E': 'E',
+                'F': 'F',
+                'I': 'I'
+              };
+              gradeEnum = gradeMap[grade] || null;
+            }
+
             await prisma.gradeRecord.create({
               data: {
                 enrollment_no: row.enrollment_no,
-                faculty_no: row.faculty_no,
                 course_code: courseGrade.course_code,
-                academic_year: semesterInfo.academic_year,
-                semester_type: semesterInfo.semester_type,
-                grade: grade,
-                grade_points: grade_points_value,
-                is_backlog: false,
-                is_improvement: false,
+                sem: `S${semesterInfo.academic_year.toString().slice(-2)}${semesterInfo.semester_type}${row.current_semester || 1}${semesterInfo.semester_type}`,
+                semester_no: row.current_semester || 1,
+                grade: gradeEnum,
               },
             });
             gradesInserted++;

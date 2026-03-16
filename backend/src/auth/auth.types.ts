@@ -33,6 +33,7 @@ export interface RegisterDto {
 export interface LoginDto {
   email: string;
   password: string;
+  role: UserRole;
   rememberMe?: boolean;
 }
 
@@ -118,11 +119,15 @@ export interface ForgotPasswordDto {
   email: string;
 }
 
+export interface VerifyResetOtpDto {
+  email: string;
+  otp: string;
+}
+
 export interface ResetPasswordDto {
   email: string;
-  token: string;
+  otp: string;
   newPassword: string;
-  confirmPassword: string;
 }
 
 /* ================= LOGOUT ================= */

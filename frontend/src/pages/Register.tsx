@@ -5,12 +5,14 @@ import { registerUser, getErrorMessage } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { GraduationCap, Users, AlertCircle, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 
 const AMU_LOGO_URL = "https://registration.fyup.amucoe.ac.in/assets/logo.png";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [role, setRole] = useState<UserRole>('student');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,7 +21,8 @@ const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    studentId: '',
+    enrollmentNo: '',
+    facultyNo: '',
     password: '',
     confirmPassword: '',
   });
@@ -44,8 +47,12 @@ const Register = () => {
       newErrors.email = 'Please enter a valid email';
     }
 
-    if (role === 'student' && !formData.studentId.trim()) {
-      newErrors.studentId = 'Student ID is required';
+    if (role === 'student' && !formData.enrollmentNo.trim()) {
+      newErrors.enrollmentNo = 'Enrollment number is required';
+    }
+
+    if (role === 'teacher' && !formData.facultyNo.trim()) {
+      newErrors.facultyNo = 'Faculty number is required';
     }
     
     if (!formData.password) {
@@ -72,15 +79,30 @@ const Register = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await registerUser({
+      const registrationData: any = {
         name: formData.fullName,
         email: formData.email,
-        studentId: formData.studentId || formData.email.split('@')[0],
         password: formData.password,
-        role,
-      });
+        confirmPassword: formData.confirmPassword,
+      };
 
-      setSuccessMessage(response.message || 'Registration successful! Redirecting to login...');
+      if (role === 'student') {
+        registrationData.enrollment_no = formData.enrollmentNo;
+      } else if (role === 'teacher') {
+        registrationData.faculty_no = formData.facultyNo;
+      }
+
+      const response = await registerUser(registrationData);
+
+      const message = response.message || 'Registration successful!';
+      setSuccessMessage(message);
+      
+      // Show success toast popup
+      toast({
+        title: 'Registration Successful! 🎉',
+        description: `${message} Redirecting to login page...`,
+        duration: 3000,
+      });
       
       // Redirect to login after 2 seconds
       setTimeout(() => {
@@ -89,6 +111,14 @@ const Register = () => {
     } catch (error) {
       const errorMessage = getErrorMessage(error);
       setApiError(errorMessage);
+      
+      // Show error toast popup
+      toast({
+        title: 'Registration Failed',
+        description: errorMessage,
+        variant: 'destructive',
+        duration: 5000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -150,16 +180,16 @@ const Register = () => {
             </button>
             <button
               type="button"
-              onClick={() => handleRoleChange('faculty')}
+              onClick={() => handleRoleChange('teacher')}
               disabled={isSubmitting}
               className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
-                role === 'faculty'
+                role === 'teacher'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Users className="h-4 w-4" />
-              <span>Faculty</span>
+              <span>Teacher</span>
             </button>
           </div>
 
@@ -222,22 +252,41 @@ const Register = () => {
               )}
             </div>
 
-            {role === 'student' && (
+            {role === 'student' ? (
               <div className="space-y-1.5">
-                <Label htmlFor="studentId" className="text-sm font-medium">Student ID / Enrollment Number</Label>
+                <Label htmlFor="enrollmentNo" className="text-sm font-medium">Enrollment Number</Label>
                 <Input
-                  id="studentId"
-                  name="studentId"
-                  placeholder="e.g., GP2212"
-                  value={formData.studentId}
+                  id="enrollmentNo"
+                  name="enrollmentNo"
+                  placeholder="e.g., 22BXXXX"
+                  value={formData.enrollmentNo}
                   onChange={handleChange}
                   disabled={isSubmitting}
-                  className={`h-11 rounded-lg ${errors.studentId ? 'border-destructive' : ''}`}
+                  className={`h-11 rounded-lg ${errors.enrollmentNo ? 'border-destructive' : ''}`}
                 />
-                {errors.studentId && (
+                {errors.enrollmentNo && (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    {errors.studentId}
+                    {errors.enrollmentNo}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="facultyNo" className="text-sm font-medium">Faculty Number</Label>
+                <Input
+                  id="facultyNo"
+                  name="facultyNo"
+                  placeholder="e.g., 22FXXXX"
+                  value={formData.facultyNo}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className={`h-11 rounded-lg ${errors.facultyNo ? 'border-destructive' : ''}`}
+                />
+                {errors.facultyNo && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.facultyNo}
                   </p>
                 )}
               </div>

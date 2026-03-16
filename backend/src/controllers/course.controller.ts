@@ -1,11 +1,48 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, AttemptType, RegistrationMode, Grade } from "@prisma/client";
 import { checkPrerequisites } from "../services/prerequisite.service";
 import { validateCreditLimit, calculateCurrentCredits } from "../services/credit.service";
 import { checkScheduleConflict } from "../services/schedule.service";
 import { validateElectiveSelection } from "../services/elective.service";
+import { 
+  determineAttemptType, 
+  recordCourseAttempt, 
+  getAttemptInfo 
+} from "../services/attempt-tracking.service";
+import { 
+  validateRegistrationMode, 
+  validateModeTypeCompatibility 
+} from "../services/mode-validation.service";
+import { 
+  validateMinorDegreeEligibility, 
+  validateThirdYearFinalYearCourse 
+} from "../services/cgpa-validation.service";
+import { 
+  validateImprovementEligibility 
+} from "../services/improvement-validation.service";
 
 const prisma = new PrismaClient();
+
+// Grade to grade points mapping
+const gradePoints: { [key in Grade]: number } = {
+  [Grade.A_PLUS]: 10.0,
+  [Grade.A]: 9.0,
+  [Grade.B_PLUS]: 8.0,
+  [Grade.B]: 7.0,
+  [Grade.C]: 6.0,
+  [Grade.D]: 5.0,
+  [Grade.E]: 4.0,
+  [Grade.F]: 0.0,
+  [Grade.I]: 0.0,
+};
+
+/**
+ * Calculate grade points from grade enum
+ */
+function calculateGradePoints(grade: Grade | null): number {
+  if (!grade) return 0.0;
+  return gradePoints[grade] ?? 0.0;
+}
 
 export class CourseController {
   /**
@@ -22,19 +59,26 @@ export class CourseController {
           return;
         }
 
-        // Check registration deadline
-        const registrationDeadline = await prisma.registrationRule.findFirst({
-          where: { rule_name: "REGISTRATION_DEADLINE", is_active: true },
+        // Check if registration is open (check active phase)
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const semesterType = currentMonth >= 7 ? 1 : 2;
+
+        const activePhase = await prisma.registrationPhase.findFirst({
+          where: {
+            academic_year: currentYear,
+            semester_type: semesterType,
+            is_enabled: true,
+            start_date: { lte: now },
+            end_date: { gte: now },
+          },
         });
 
-        const isRegistrationOpen = registrationDeadline && registrationDeadline.rule_value
-          ? new Date(registrationDeadline.rule_value) > new Date()
-          : true;
-
-        if (!isRegistrationOpen) {
+        if (!activePhase) {
           res.status(403).json({ 
-            error: "Registration window closed",
-            deadline: registrationDeadline?.rule_value,
+            error: "Registration is currently closed. No active registration phase.",
+            message: "Please contact administration or wait for the registration window to open.",
           });
           return;
         }
@@ -56,15 +100,14 @@ export class CourseController {
           include: { course: true },
         });
 
-        // Get current registrations
-        const currentYear = new Date().getFullYear();
-        const semesterType = student.current_semester % 2 === 1 ? 1 : 2;
+        // Get current registrations (reuse currentYear and semesterType from above)
+        const studentSemesterType = student.current_semester % 2 === 1 ? 1 : 2;
 
         const registrations = await prisma.courseRegistration.findMany({
           where: {
             enrollment_no: enrollmentNo,
             academic_year: currentYear,
-            semester_type: semesterType,
+            semester_type: studentSemesterType,
             deleted_at: null,
           },
         });
@@ -76,10 +119,22 @@ export class CourseController {
 
         // Handle different filters
         if (filter === 'all' || filter === 'eligible') {
+          // Map full branch code to short branch code
+          const branchCodeMap: { [key: string]: string } = {
+            'COBEA': 'CE',
+            'EEBEA': 'EE', 
+            'MEBEA': 'ME',
+            'CIBEA': 'CI',
+            'CHBEA': 'CH',
+            'ARBEA': 'AR'
+          };
+          
+          const shortBranchCode = branchCodeMap[student.faculty?.branch_code || ''] || student.faculty?.branch_code;
+          
           // Show current semester courses (default view)
           const currentSemesterCourses = await prisma.course.findMany({
             where: {
-              branch_code: student.faculty?.branch_code,
+              branch_code: shortBranchCode,
               semester_no: student.current_semester,
             },
             include: {
@@ -101,6 +156,8 @@ export class CourseController {
               courseType: course.course_type,
               isAutoSelected: !course.is_elective, // Auto-select non-elective courses
               registrationType: "regular",
+              registrationMode: "A", // Default mode for regular courses
+              allowedModes: ["A"], // First attempt only allows Mode A
               prerequisites: course.prerequisites?.map((p: any) => ({
                 courseCode: p.prerequisite_course_code,
                 courseName: p.prerequisite.course_name,
@@ -111,7 +168,7 @@ export class CourseController {
           // Get elective groups
           const groups = await prisma.electiveGroup.findMany({
             where: {
-              branch_code: student.faculty?.branch_code,
+              branch_code: shortBranchCode,
               semester_no: student.current_semester,
             },
           });
@@ -162,6 +219,8 @@ export class CourseController {
                 courseType: record.course.course_type,
                 isAutoSelected: false,
                 registrationType: "backlog",
+                registrationMode: "B", // Default mode for backlog (E grade)
+                allowedModes: ["B", "C"], // Backlog courses allow B/C modes
                 previousAttempts: attempts.length,
                 lastGrade: lastAttempt.grade,
                 lastGradePoints: Number(lastAttempt.grade_points),
@@ -208,8 +267,10 @@ export class CourseController {
               courseType: record.course.course_type,
               isAutoSelected: false,
               registrationType: "improvement",
+              registrationMode: "B", // Default for improvement
+              allowedModes: ["B", "C"], // Improvement only allows B/C
               currentGrade: record.grade,
-              currentGradePoints: Number(record.grade_points),
+              currentGradePoints: calculateGradePoints(record.grade),
               previousAttempts: (courseAttemptsMap.get(record.course_code) || []).length,
             }));
 
@@ -225,10 +286,8 @@ export class CourseController {
           electiveGroups,
           filter,
           deadlines: {
-            registration: registrationDeadline?.rule_value || null,
-            modification: await prisma.registrationRule.findFirst({
-              where: { rule_name: "MODIFICATION_DEADLINE", is_active: true },
-            }).then(r => r?.rule_value || null),
+            currentPhase: activePhase.phase_label,
+            phaseEndDate: activePhase.end_date,
           },
         });
       } catch (error) {
@@ -245,7 +304,7 @@ export class CourseController {
   static async registerCourse(req: Request, res: Response) {
     try {
       const enrollmentNo = req.user?.enrollmentNo;
-      const { courses } = req.body; // Array of { courseCode, registrationType }
+      const { courses } = req.body; // Array of { courseCode, registrationType, registrationMode }
 
       if (!enrollmentNo) {
         res.status(401).json({ error: "Unauthorized" });
@@ -254,6 +313,30 @@ export class CourseController {
 
       if (!courses || !Array.isArray(courses) || courses.length === 0) {
         res.status(400).json({ error: "Courses array is required" });
+        return;
+      }
+
+      // Check if registration is open (check active phase)
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const semesterType = currentMonth >= 7 ? 1 : 2;
+
+      const activePhase = await prisma.registrationPhase.findFirst({
+        where: {
+          academic_year: currentYear,
+          semester_type: semesterType,
+          is_enabled: true,
+          start_date: { lte: now },
+          end_date: { gte: now },
+        },
+      });
+
+      if (!activePhase) {
+        res.status(403).json({ 
+          error: "Registration is currently closed",
+          message: "No active registration phase. Please contact administration.",
+        });
         return;
       }
 
@@ -268,34 +351,41 @@ export class CourseController {
         return;
       }
 
-      const currentYear = new Date().getFullYear();
-      // Odd semesters (1,3,5,7) = type 1, Even semesters (2,4,6,8) = type 2
-      const semesterType = student.current_semester % 2 === 1 ? 1 : 2;
+      // Use student's current semester for registration
+      const studentSemesterType = student.current_semester % 2 === 1 ? 1 : 2;
 
       const registered: any[] = [];
       const errors: any[] = [];
 
+      console.log(`📝 Processing ${courses.length} course(s) for registration:`, 
+        courses.map(c => `${c.courseCode} (${c.registrationType}/${c.registrationMode || 'A'})`).join(', ')
+      );
+
+      // Get current credits ONCE before the loop (not inside the loop)
+      const initialCredits = await calculateCurrentCredits(enrollmentNo);
+      console.log(`💳 Initial credits before batch: ${initialCredits}`);
+
       for (const courseData of courses) {
-        const { courseCode, registrationType = 'regular' } = courseData;
+        const { 
+          courseCode, 
+          registrationType = 'regular',
+          registrationMode = 'A' 
+        } = courseData;
+
+        console.log(`\n🔍 Processing: ${courseCode} (${registrationType}/${registrationMode})`);
 
         try {
-          // Get course details
-          const course = await prisma.course.findUnique({
-            where: { course_code: courseCode },
-          });
-
-          if (!course) {
-            errors.push({ courseCode, error: "Course not found" });
-            continue;
-          }
-
-          // Check if already registered (exclude soft-deleted)
+          // VALIDATION ORDER (CORRECTED):
+          
+          // 1. ✅ Check registration phase (already done above)
+          
+          // 2. ✅ Check if already registered (exclude soft-deleted)
           const existingRegistration = await prisma.courseRegistration.findFirst({
             where: {
               enrollment_no: enrollmentNo,
               course_code: courseCode,
               academic_year: currentYear,
-              semester_type: semesterType,
+              semester_type: studentSemesterType,
               deleted_at: null, // Only check active registrations
             },
           });
@@ -305,65 +395,209 @@ export class CourseController {
             continue;
           }
 
-          // Validation 1: Check prerequisites
-          const prereqCheck = await checkPrerequisites(enrollmentNo, courseCode);
-          if (!prereqCheck.met) {
+          // Get course details
+          const course = await prisma.course.findUnique({
+            where: { course_code: courseCode },
+          });
+
+          if (!course) {
+            console.log(`❌ Course not found: ${courseCode}`);
+            errors.push({ courseCode, error: "Course not found" });
+            continue;
+          }
+
+          console.log(`✅ Course found: ${course.course_name}`);
+
+          // 3. ✅ Check prerequisites (skip for backlog/improvement)
+          if (registrationType === 'regular') {
+            const prereqCheck = await checkPrerequisites(enrollmentNo, courseCode);
+            if (!prereqCheck.met) {
+              errors.push({
+                courseCode,
+                error: "Prerequisites not met",
+                reason: "prerequisites_not_met",
+                missing: prereqCheck.missing,
+              });
+              continue;
+            }
+          }
+
+          // 4. ✨ NEW: Validate registrationType + registrationMode compatibility
+          const compatibilityCheck = validateModeTypeCompatibility(registrationType, registrationMode);
+          if (!compatibilityCheck.valid) {
             errors.push({
               courseCode,
-              error: "Prerequisites not met",
-              missing: prereqCheck.missing,
+              error: compatibilityCheck.message,
+              reason: "mode_type_mismatch",
             });
             continue;
           }
 
-          // Validation 2: Check credit limit (calculate with all selected courses)
-          const currentCredits = await calculateCurrentCredits(enrollmentNo);
-          const selectedCredits = courses.reduce((sum, c) => {
-            const courseInList = registered.find(r => r.courseCode === c.courseCode);
-            return sum + (courseInList?.credits || 0);
-          }, 0);
+          // 5. ✨ NEW: Determine attempt type (system decides, not user)
+          let attemptType: AttemptType;
+          let attemptNumber: number;
           
-          if (currentCredits + selectedCredits + course.credits > 40) {
+          try {
+            const attemptInfo = await determineAttemptType(enrollmentNo, courseCode, registrationType);
+            attemptType = attemptInfo.attemptType;
+            attemptNumber = attemptInfo.attemptNumber;
+            
+            console.log(`📊 Determined attempt: ${attemptType} #${attemptNumber}`);
+          } catch (error: any) {
+            errors.push({
+              courseCode,
+              error: error.message,
+              reason: "attempt_determination_failed",
+            });
+            continue;
+          }
+
+          // 6. ✨ NEW: Validate improvement eligibility (if type = improvement)
+          if (attemptType === AttemptType.IMPROVEMENT) {
+            const improvementCheck = await validateImprovementEligibility(
+              enrollmentNo, 
+              courseCode, 
+              registrationMode
+            );
+            
+            if (!improvementCheck.valid) {
+              errors.push({
+                courseCode,
+                error: improvementCheck.message,
+                reason: improvementCheck.reason,
+                details: improvementCheck.details,
+              });
+              continue;
+            }
+          }
+
+          // 7. ✨ NEW: Validate registration mode eligibility
+          const modeValidation = await validateRegistrationMode(
+            enrollmentNo,
+            courseCode,
+            registrationMode,
+            attemptType
+          );
+
+          if (!modeValidation.valid) {
+            errors.push({
+              courseCode,
+              error: modeValidation.message,
+              reason: modeValidation.reason,
+              allowedModes: modeValidation.allowedModes,
+            });
+            continue;
+          }
+
+          // 8. ✨ NEW: Check CGPA requirements (if applicable)
+          
+          // Check for minor degree courses (if this is a minor course)
+          // TODO: Add minor course identification logic when minor system is implemented
+          
+          // Check for third-year students registering final year courses
+          if ([5, 6].includes(student.current_semester) && [7, 8].includes(course.semester_no)) {
+            const cgpaCheck = await validateThirdYearFinalYearCourse(enrollmentNo, courseCode);
+            if (!cgpaCheck.valid) {
+              errors.push({
+                courseCode,
+                error: cgpaCheck.message,
+                reason: cgpaCheck.reason,
+                details: {
+                  currentCGPA: cgpaCheck.currentCGPA,
+                  requiredCGPA: cgpaCheck.requiredCGPA,
+                  backlogCount: cgpaCheck.backlogCount,
+                },
+              });
+              continue;
+            }
+          }
+
+          // 9. ✅ Check credit limit
+          // Use initialCredits (from before loop) + batchCredits (from this batch)
+          const batchCredits = registered.reduce((sum, r) => sum + Number(r.credits), 0);
+          
+          if (initialCredits + batchCredits + Number(course.credits) > 40) {
+            console.log(`❌ Credit limit exceeded for ${courseCode}:`, {
+              initialCredits,
+              batchCredits,
+              courseCredits: Number(course.credits),
+              total: initialCredits + batchCredits + Number(course.credits),
+              maxCredits: 40,
+            });
+            
             errors.push({
               courseCode,
               error: "Credit limit exceeded",
-              currentCredits,
-              selectedCredits,
-              courseCredits: course.credits,
-              maxCredits: 40,
+              reason: "credit_limit_exceeded",
+              details: {
+                initialCredits,
+                batchCredits,
+                courseCredits: course.credits,
+                maxCredits: 40,
+              },
             });
             continue;
           }
 
-          // All validations passed - create registration with auto-approval
+          // 10. ✅ Create registration (all validations passed)
           const registration = await prisma.courseRegistration.create({
             data: {
               enrollment_no: enrollmentNo,
               course_code: courseCode,
               academic_year: currentYear,
-              semester_type: semesterType,
+              semester_type: studentSemesterType,
               registration_type: registrationType,
+              registration_mode: registrationMode,
               is_approved: true, // Auto-approve
             },
           });
+
+          // 11. ✨ NEW: Record course attempt (AFTER registration succeeds)
+          await recordCourseAttempt(
+            enrollmentNo,
+            courseCode,
+            attemptType,
+            attemptNumber,
+            registrationMode,
+            currentYear,
+            studentSemesterType,
+            student.current_semester
+          );
 
           registered.push({
             courseCode: course.course_code,
             courseName: course.course_name,
             credits: course.credits,
             registrationType,
+            registrationMode,
+            attemptType,
+            attemptNumber,
             registeredAt: registration.registered_at,
           });
 
         } catch (error: any) {
+          console.error(`❌ Error processing ${courseCode}:`, error);
           errors.push({
             courseCode,
             error: error.message || "Registration failed",
+            reason: "processing_error",
           });
         }
       }
 
-      const totalCredits = registered.reduce((sum, c) => sum + c.credits, 0);
+      // 12. ✨ NEW: Update student's last registration info (if any courses were registered)
+      if (registered.length > 0) {
+        await prisma.student.update({
+          where: { enrollment_no: enrollmentNo },
+          data: {
+            last_registration_year: currentYear,
+            last_registration_semester: studentSemesterType,
+          },
+        });
+        console.log(`✅ Updated last registration info: ${currentYear}-${studentSemesterType}`);
+      }
+
+      const totalCredits = registered.reduce((sum, c) => sum + Number(c.credits), 0);
 
       res.status(201).json({
         message: `Successfully registered for ${registered.length} course(s)`,

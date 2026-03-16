@@ -1,0 +1,8 @@
+### Test Current Phase API (No Auth Required)
+GET http://localhost:5000/api/registration-control/current-phase
+Content-Type: application/json
+
+### Test with Student Token (if you have one)
+GET http://localhost:5000/api/registration-control/current-phase
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE

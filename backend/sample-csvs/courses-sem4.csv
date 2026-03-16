@@ -1,0 +1,20 @@
+course_code,course_name,credits,semester_no,branch_code,is_elective,is_advanced,elective_type,elective_group,course_type,max_seats,is_running
+COC2114,Data Structure & Lab,4.0,4,CE,false,false,,,Theory,60,true
+COC2142,Design & Analysis of Algorithm,4.0,4,CE,false,false,,,Theory,60,true
+COC2222,Digital Design & Simulation Lab,1.0,4,CE,false,false,,,Lab,60,true
+COC2082,Computer Architecture,4.0,4,CE,false,false,,,Theory,60,true
+AMS2622,Numerical Analysis,4.0,4,CE,false,false,,,Theory,60,true
+COC2412,Fundamentals of Digital Signal Processing,4.0,4,CE,false,false,,,Theory,60,true
+ELA2502,Electronics Laboratory,1.0,4,CE,false,false,,,Lab,60,true
+COC2999,Advanced Machine Learning,4.0,4,CE,false,true,,,Theory,25,true
+COC2888,Web Development Elective,3.0,4,CE,true,false,BRANCH,WEB_GROUP,Theory,40,true
+EEC2122,Electrical Machines II,4.0,4,EE,false,false,,,Theory,50,true
+EEC2132,Electronics I,4.0,4,EE,false,false,,,Theory,50,true
+EEC2312,Power System Engineering,4.0,4,EE,false,false,,,Theory,50,true
+EEC2322,Electrical Measurements,3.0,4,EE,false,false,,,Theory,50,true
+EEC2412,Control Systems,4.0,4,EE,false,false,,,Theory,50,true
+EEC2932,Circuits and Measurements Lab,1.5,4,EE,false,false,,,Lab,50,true
+ELA2112,Applied Digital Circuit,3.0,4,EE,false,false,,,Theory,50,true
+MEH2452,Engineering Economy & Management,3.0,4,EE,false,false,,,Theory,50,true
+EEC2999,Advanced Power Electronics,4.0,4,EE,false,true,,,Theory,20,true
+EEC2777,Renewable Energy Systems,3.0,4,EE,true,false,BRANCH,ENERGY_GROUP,Theory,35,true

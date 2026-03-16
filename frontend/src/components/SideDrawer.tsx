@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
   GraduationCap,
   Lock
 } from 'lucide-react';
+import { getCurrentPhase } from '@/services/api';
 
 type View = 'dashboard' | 'profile' | 'courses' | 'registration' | 'history';
 
@@ -30,8 +31,24 @@ interface SideDrawerProps {
 
 const SideDrawer = ({ currentView, onViewChange }: SideDrawerProps) => {
   const [open, setOpen] = useState(false);
-  const { user, logout, isRegistrationEnabled } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+
+  // Check for active registration phase
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      try {
+        const response = await getCurrentPhase();
+        setIsRegistrationOpen(response.isOpen);
+      } catch (error) {
+        console.error('Error checking registration status:', error);
+        setIsRegistrationOpen(false);
+      }
+    };
+
+    checkRegistrationStatus();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -48,7 +65,7 @@ const SideDrawer = ({ currentView, onViewChange }: SideDrawerProps) => {
     { id: 'dashboard' as View, label: 'Dashboard', icon: Home, disabled: false },
     { id: 'profile' as View, label: 'Profile', icon: User, disabled: false },
     { id: 'history' as View, label: 'Course History', icon: History, disabled: false },
-    { id: 'registration' as View, label: 'Course Registration', icon: ClipboardList, disabled: !isRegistrationEnabled },
+    { id: 'registration' as View, label: 'Course Registration', icon: ClipboardList, disabled: !isRegistrationOpen },
   ];
 
   return (

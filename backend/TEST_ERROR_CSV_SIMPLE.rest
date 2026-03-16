@@ -1,0 +1,63 @@
+### Simple Test for Error CSV Download
+### Use this to verify backend is working
+
+@baseUrl = http://localhost:8000
+
+### 1. Login first
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "teacher@example.com",
+  "password": "teacher123"
+}
+
+### Save token from response
+### Then test upload with errors
+
+### 2. Test Students Upload with Errors
+POST {{baseUrl}}/api/admin/upload/v2/process
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="uploadType"
+
+students
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test.csv"
+Content-Type: text/csv
+
+Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result
+S2221,CE,18CE001,GK1001,John,4,Hall A,8.5,8.2,60,Pass
+S2221,,18CE002,GK1002,Jane,4,Hall B,9.0,8.8,60,Pass
+S2221,CE,,GK1003,Bob,4,Hall C,7.5,7.8,55,Pass
+------WebKitFormBoundary--
+
+### Expected Response:
+# {
+#   "success": false,
+#   "uploadType": "students",
+#   "inserted": {
+#     "created": 1,
+#     "updated": 0,
+#     "failed": 2
+#   },
+#   "errors": [
+#     "Row 3: Missing branch code",
+#     "Row 4: Missing faculty number"
+#   ],
+#   "errorCSV": "row_number,Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result,error_message\n3,S2221,,18CE002,GK1002,Jane,4,Hall B,9.0,8.8,60,Pass,\"Missing branch code\"\n4,S2221,CE,,GK1003,Bob,4,Hall C,7.5,7.8,55,Pass,\"Missing faculty number\"",
+#   "hasErrorCSV": true
+# }
+
+### 3. If errorCSV is in response, test download
+POST {{baseUrl}}/api/admin/upload/v2/download-errors
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "errorCSV": "row_number,Sem,Br,FacultyN,EnrolN,Name,Semester,Hall,SPI,CPI,CumEC,Result,error_message\n3,S2221,,18CE002,GK1002,Jane,4,Hall B,9.0,8.8,60,Pass,\"Missing branch code\"\n4,S2221,CE,,GK1003,Bob,4,Hall C,7.5,7.8,55,Pass,\"Missing faculty number\""
+}
+
+### Should download a CSV file
